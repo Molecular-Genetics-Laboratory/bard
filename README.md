@@ -1,49 +1,90 @@
 #  bard
-Batch Analyser of Ribosome profiling datasets
+**bard** is a command-line tool for analyzing ribosome profiling datasets. It can calculate E/P/A site offsets, metagene profiles, detect pauses, and more. The current version works for prokaryotes and yeast.
+
 
 ## Requirements
-
-* Python 3.x
+* Python 3.x (>= 3.7)
+* Biopython (>= 1.76)
+* Numpy (>= 1.18.1)
+* Seaborn (>= 0.10.0)
+* Matplotlib (>= 3.1.3)
+* Pysam (>= 0.15.3)
 * Linux / macOS
-* Do a _'pip install requirements.txt'_
-* Done!
-
-add info on how to process the gtf before use
-
-bard runs successfully on Linux / macOS.
-
-To get started, you will need the following:
-
-* **Read alignment file in BAM format**
-   You need to generate a BAM file
-
-
-* **Annotation file in GFFv3/GTF format**
-
-* **CDS sequences of the organism in FASTA format**
-
-## Quick example (Yeast)
-
-Enter yeast example images etc here ...
+* At least 2GB of (usable) RAM
 
 
 ## Installation and usage
-
-bard uses Python 3.x. Please ensure that it is installed and available in your path
-
-First, ensure that you have all the required dependencies installed. Run the following:
+After ensuring that all dependencies are satisfied, you can directly download and run the `bard.py` script.
+### Installing dependencies
+If you don't have the required libraries already installed, you can do so via `pip` using the `requirements.txt` file:
 
 ```shell
 ~$ pip install requirements.txt
 ```
 
-As a user, the **bard.py** file is enough. Run it in your shell like so:
+..or you could set up a virtual environment using `conda`:
 
 ```shell
+# create virtual environment
+~$ conda create --name env_name --file requirements.txt
+
+# activate virtual environment
+~$ conda activate env_name
+
+... run analysis ...
+# deactivate environment when done
+~$ conda deactivate
+```
+
+### Usage
+
+`bard` does not work directly on the raw read sequence files. They need to be preprocessed (removing rRNAs) and mapped to a reference genome first, using either `bowtie2/tophat` or some similar software of your choice. You'll also need the corresponding annotation file and a multiple fasta file containing all the CDS sequences. Please be aware that the gene names in the GTF/GFF (annotation) file need to exactly match those in the CDS file. Also, if you are working on yeast, the chromome IDs in your reference genome should match with those in the GTF.
+
+It is preferable to download these organism specific files from the same source, such as `Ensembl`.
+
+`TL; DR`: You need to have the following files available for input:
+* An annotation file (either GTF/GFFv3)
+* An alignment file in BAM format (please remove unmapped reads and index it first, using `samtools` or alike)
+* A multi-fasta file containing the CDS sequences for each gene
+
+#### First run
+`bard` does not have any command-line options; using only a single configuration file instead. To create a configuration file, run the script without any arguments:
+
+```shell
+~$ python bard.py
+```
+
+This will create two files in your working directory: `bard_config_template.json`, which is an empty configuration file you can edit, and a short help file `bard_config_help.txt`, which describes the available options. Please go through the help file for full details.
+
+The config file looks something like this:
+
+```json
+{
+    "coding_sequence_path": "/home/user/path/to/cds.fa",
+    "coding_sequence_format": "fasta",
+    "annotation_file_path": "/home/user/path/to/annotation.gff",
+    "annotation_feature_tag": "ID",
+    "bam_file_path": "/home/user/path/to/alignment.bam",
+    "read_offset_terminal": "five_prime",
+    "coverage_cutoff": 40,
+    "coverage_metric": "reads_per_nt",
+    "will_ignore_overlaps": true,
+    "peak_scan_range": [-25, -5],
+    "use_readlengths": [26,27,28,29,30,31,32,33],
+    "gene_list_file": "/home/user/path/to/gene_list.txt",
+    "gene_list_action": "include_only",
+    "genes_overlap_exception": "/home/user/path/to/overlapping_genes_list.txt"
+}
+```
+Once you have edited the configuration file to your requirements, your can run `bard` like so:
+
+```shell
+# time for a short coffee break :)
 ~$ python bard.py config.json
 ```
 
-This will write the results in a folder with the following structure:
+#### Example (for *S. cerevisiae*)
+A short tutorial on how to do this for yeast.
 
 ```shell
 .

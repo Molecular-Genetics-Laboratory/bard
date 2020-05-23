@@ -504,7 +504,7 @@ It looks something like this:
 
 
 Notice that the last option-value pair of a JSON file does not end with a comma. Also,
-while the "options" are strings, the "values" can be anything, including integers
+while the "options" are strings, the "values" can be of any type, including integers
 floats, arrays, boolean, etc.
 
 
