@@ -1,19 +1,19 @@
 # bumpy_id.py
 # Usage:
-# ~$ python bump_id.py script.py
+# ~$ python commit.py
 
 # Update version string with current timestamp
 
-
 import os
-import sys
 import time
+import random
 from datetime import datetime as dt
 
 def main():
-    idstr = str(dt.now().strftime("%H-%M-%S-%d-%m-%Y"))
-    fi    = sys.argv[1]
-    fo    = "tmp.xyz"
+    idstr  = str(dt.now().strftime("%H-%M-%S-%d-%m-%Y"))
+    idrand = "%05x" % random.randrange(16*1e6)
+    fi     = "bard.py"
+    fo     = "tmp.xyz"
 
     fhin  = open(fi, "r")
     fhout = open(fo, "w")
@@ -21,7 +21,9 @@ def main():
     for line in fhin:
         if "versionstr =" in line:
             fhout.write(
-            "versionstr = \"bard v1.0 ID={}\"\n".format(idstr)
+            "versionstr = \"bard v0.1 ID={}-{}\"\n".format(
+                idstr, idrand
+              )
             )
         else:
             fhout.write(line)
@@ -30,6 +32,8 @@ def main():
     fhout.close()
     os.system("rm {}".format(fi))
     os.system("mv tmp.xyz {}".format(fi))
+    os.system("git add .")
+    os.system("git commit")
 
 
 if __name__ == "__main__":
