@@ -474,7 +474,7 @@ CONFIG_TMP = """{
     "peak_scan_range": [-25, -5],
     "use_readlengths": [26,27,28,29,30,31,32,33],
     "gene_list_file": "/home/user/path/to/gene_list.txt",
-    "gene_list_action": "include_only",
+    "gene_list_action": "",
     "genes_overlap_exception": "/home/user/path/to/overlapping_genes_list.txt"
 }
 """
@@ -523,26 +523,26 @@ marked with a star(*):
 --------------------------------------+--------------------------------------------------
             OPTIONS                   |                     VALUES
 --------------------------------------+--------------------------------------------------
-*1. coding_sequence_path (-c):        |  Absolute path to the CDS / cDNA file, containing
+*1. coding_sequence_path:             |  Absolute path to the CDS / cDNA file, containing
                                       |  the sequences for all genes. Make sure that the
                                       |  fasta headers exactly match the names in the GFF
 --------------------------------------+--------------------------------------------------
-*2. coding_sequence_format (-cf):     |  The format of the CDS/cDNA file. eg: "fasta"
+*2. coding_sequence_format:           |  The format of the CDS/cDNA file. eg: "fasta"
 --------------------------------------+--------------------------------------------------
-*3. annotation_file_path (-g):        |  Absolute path to the annotation file (GTF/GFF)
+*3. annotation_file_path:             |  Absolute path to the annotation file (GTF/GFF)
 --------------------------------------+--------------------------------------------------
-*4. annotation_feature_tag (-f):      |  The tag in column 9 of the GFF/GTF file which
+*4. annotation_feature_tag:           |  The tag in column 9 of the GFF/GTF file which
                                       |  uniquely identifies the feature (gene).
                                       |  (eg: "gene_id" or "ID" or "protein_id")
 --------------------------------------+--------------------------------------------------
-*5. bam_file_path (-b):               |  Absolute path to the alignment file (BAM)
+*5. bam_file_path:                    |  Absolute path to the alignment file (BAM)
 --------------------------------------+--------------------------------------------------
-*6. read_offset_terminal (-t):        |  Calculate the P/E/A site offsets for either
+*6. read_offset_terminal:             |  Calculate the P/E/A site offsets for either
                                       |  "five_prime" or "three_prime" ends of the reads
 --------------------------------------+--------------------------------------------------
-*7. will_ignore_overlaps (-x):        |  Ignore overlapping genes? true or false(boolean)
+*7. will_ignore_overlaps:             |  Ignore overlapping genes? true or false(boolean)
 --------------------------------------+--------------------------------------------------
-*8. peak_scan_range (-s):             |  Scan for the initiation peak within this range
+*8. peak_scan_range:                  |  Scan for the initiation peak within this range
                                       |  of nucleotides w.r.t the start codon.
                                       |  For example, [-25, -5] checks for the initiation
                                       |  peak -25 to -5 nt upstream of the start codon,
@@ -551,17 +551,17 @@ marked with a star(*):
                                       |  like: [5, 30]. You'll need to figure out the
                                       |  exact values empirically.
 --------------------------------------+--------------------------------------------------
-9. use_readlengths (-r):                   |  Ribosome protected fragment (RPF/read) lengths
+9. use_readlengths:                   |  Ribosome protected fragment (RPF/read) lengths
                                       |  to use in the analysis. By default, it looks at
                                       |  all read lengths from 20 to 40nt, and then uses
                                       |  some heuristics to figure out which ones to use.
 --------------------------------------+--------------------------------------------------
-10. gene_list_file (-gf):             |  Absolute path to a file containing a list of
+10. gene_list_file:                   |  Absolute path to a file containing a list of
                                       |  gene names, one per line. The names must match
                                       |  with those in the GFF and the CDS/cDNA multiple
                                       |  fasta file.
 --------------------------------------+--------------------------------------------------
-11. gene_list_action (-ga):           |  Specifies what to do with the list of genes.
+11. gene_list_action:                 |  Specifies what to do with the list of genes.
                                       | -------------------
                                       |
                                       |  1."include_only":    Run the analysis only for
@@ -577,15 +577,15 @@ marked with a star(*):
                                       |                       number of randomly selected
                                       |                       genes.
 --------------------------------------+--------------------------------------------------
-12. genes_overlap_exception (-oe):    |  Absolute path to a file containing a list of
+12. genes_overlap_exception:          |  Absolute path to a file containing a list of
                                       |  gene names (all of which overlap with some other)
                                       |  which will NOT be ignored during the analysis.
                                       |  One gene name per line.
 --------------------------------------+--------------------------------------------------
-13. coverage_cutoff (-cv)             |  Exclude any gene which has a coverage value
+13. coverage_cutoff:                  |  Exclude any gene which has a coverage value
                                       |  below this numerical threshold. Defaults to 10.
 --------------------------------------+--------------------------------------------------
-14. coverage_metric (-cm):            |  Specifies how the coverage value is calculated.
+14. coverage_metric:                  |  Specifies how the coverage value is calculated.
                                       |  Can be either "reads_per_nt" (on average) or
                                       |  "rpkm". Defaults to RPKM.
 --------------------------------------+--------------------------------------------------
@@ -3597,7 +3597,7 @@ def main():
         )
         print("  Usage: ")
         print("         ~$ python bard.py config.json\n")
-        print("  Try using the templates if you need help with the configuration\n")
+        print("  A help file has been saved for your reference.\n")
         print("  Bye!\n")
 
         raise SystemExit()
