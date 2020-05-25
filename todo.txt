@@ -1,0 +1,2 @@
+1) command line args
+2) less verbose naming for files (-v)

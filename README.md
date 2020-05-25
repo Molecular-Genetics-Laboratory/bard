@@ -26,9 +26,10 @@ If you don't have the required libraries already installed, you can do so via `p
 
 ```shell
 # create virtual environment
+# needs to be run only once
 ~$ conda create --name env_name --file requirements.txt
 
-# activate virtual environment
+# activate environment
 ~$ conda activate env_name
 
 ... run analysis ...
@@ -38,13 +39,13 @@ If you don't have the required libraries already installed, you can do so via `p
 
 ### Usage
 
-`bard` does not work directly on the raw read sequence files. They need to be preprocessed (removing rRNAs) and mapped to a reference genome first, using either `bowtie2/tophat` or some similar software of your choice. You'll also need the corresponding annotation file and a multiple fasta file containing all the CDS sequences. Please be aware that the gene names in the GTF/GFF (annotation) file need to exactly match those in the CDS file. Also, if you are working on yeast, the chromome IDs in your reference genome should match with those in the GTF.
+`bard` does not work directly on the raw read sequence files. They need to be preprocessed (removing rRNAs) and mapped to a reference genome first, using either `bowtie2/tophat` or some similar software of your choice. You'll also need the corresponding annotation file and a multiple fasta file containing all the CDS sequences. Please be aware that the gene names in the GTF/GFF (annotation) file need to exactly match those in the CDS file. If you are working on yeast, the chromome IDs in your reference genome should match with those in the GTF.
 
 It is preferable to download these organism specific files from the same source, such as `Ensembl`.
 
 `TL; DR`: You need to have the following files available for input:
 * An annotation file (either GTF/GFFv3)
-* An alignment file in BAM format (please remove unmapped reads and index it first, using `samtools` or alike)
+* An alignment file in BAM format (remove unmapped reads and index it first, using `samtools` or alike)
 * A multi-fasta file containing the CDS sequences for each gene
 
 #### First run
@@ -84,52 +85,65 @@ Once you have edited the configuration file to your requirements, your can run `
 ```
 
 #### Example (for *S. cerevisiae*)
-A short tutorial on how to do this for yeast.
+The following is a short description of how to run the analysis for *S. cerevisiae*. The read sequences were obtained from the library `SRR1042864`. The raw sequences were preprocessed and mapped to the *S.cerevisiae* `S288C_R64-1-1_20110203` reference genome according to the protocol detailed in `10.1038/nprot.2012.086`. All organism specific files were obtained from `yeastgenome.org`.
 
+The configuration file we'd use in this case:
+
+```json
+{
+    "coding_sequence_path": "/full/path/to/cds.fa",
+    "coding_sequence_format": "fasta",
+    "annotation_file_path": "/full/path/to/annotation.gff",
+    "annotation_feature_tag": "protein_id",
+    "bam_file_path": "/full/path/to/alignment.bam",
+    "read_offset_terminal": "three_prime",
+    "coverage_cutoff": 40,
+    "coverage_metric": "reads_per_nt",
+    "will_ignore_overlaps": true,
+    "peak_scan_range": [5, 30],
+    "use_readlengths": [26, 27, 28, 29],
+    "gene_list_file": "",
+    "gene_list_action": "",
+    "genes_overlap_exception": ""
+}
+```
+Briefly, the options are:
+* `annotation_feature_tag`:  The `protein_id` tag in the **9th** column of the GTF file uniquely identifies the gene (feature) names
+* `read_offset_terminal`: Determine the E/P/A site offsets from the `3'` ends of the reads
+* `coverage_cutoff`: Ignore all genes with a read coverage below this numerical threshold (40)
+* `coverage_metric`: Calculate the read coverage as average number of reads mapping per nucleotide
+* `will_ignore_overlaps`: Ignore all overlapping genes
+* `peak_scan_range`: Check for the metagene initiation peak within this range of nucleotides w.r.t the annotated start site.
+* `use_readlengths`: Ignore all reads which are not of the given sizes (in nt).
+
+
+The results will be written to a separate folder in your working directory. It has the following structure:
 ```shell
+# For illustrative purposes
+# File names will differ
 .
 ├── logfile.txt
 ├── configuration_used.json
+│
 ├── Data
-│   ├── Annotation.json
-│   ├── Asite_Offset.json
-│   ├── Asymmetry_Scores.json
-│   ├── Reading_Frame_Fractions.json
-│   ├── Data_for_Termination_Peak.json
-│   ├── Esite_Offset.json
-│   ├── Gene_Coverages.json
-│   ├── Reading_Frame_Rawvalues.json
-│   ├── High_Coverage_Genes.json
-│   ├── Read_Coverage_Profiles.json
-│   ├── Metagenes_per_read_length_without_offset.json
-│   ├── Metagenes_per_read_length_with_offset.json
-│   ├── Amino_Acid_Pause_Scores.json
-│   ├── Codon_Pause_Scores.json.json
-│   ├── Density_vector_per_Gene.json
-│   ├── Metagene_of_positional_pause_scores.json
-│   ├── Positional_Pause_scores_per_Gene.json
-│   ├── Psite_offset.json
-│   ├── Read_lengths.json
-│   ├── Data_for_start_peak.json
-│   └── Terminal_Base_Fractions.json
+│   ├── data_file_1.json
+│   ├── data_file_2.json
+│   └── data_file_3.json
+│            ... and so on
 └── Plots
-    ├── Base_Fraction_ThreePrime_End.tif
-    ├── Base_Fraction_FivePrime_End.tif
-    ├── Asymmetry_Scores.tif
-    ├── Framing_Metagene_per_read_length_no_offset.tif
-    ├── Framing_Metagene_per_read_length_offset.tiff
-    ├── Metagene_no_offset.tiff
-    ├── Metagene_with_offset.tiff
-    ├── Pause_score_per_aminoacid.tiff
-    ├── Pause_score_per_codon.tiff
-    ├── Positional_pause.tiff
-    ├── Global_reading_frame.tiff
-    ├── Read_length_histogram.tiff
-    ├── Initiation_peak.tiff
-    ├── Framing_initiation_peak.tiff
-    └── Termination_peak.tiff
-
+    ├── plot_1.svg
+    ├── plot_2.svg
+    └── plot_3.svg
+             ... and so on
 ```
+
+The data files are JSON files which you can load into a Python or R environment. For the above analysis, we would get the folllowing results:
+
+##### Initiation peak
+<img src=/images/initiation.png width=400 height=150> <img src=/images/start_framing.png width=400 height=150>
+
+##### Reading frame
+<img src=/images/reading_frame.png width=500 height=300> <img src=/images/meta_rpf_framing.png width=350 height=400>
 
 ### Processing multiple BAM files in parallel
 At present bard is single threaded. If you wish to process multiple files simultaneously, then place all the config files in a single folder, then run:
@@ -156,22 +170,7 @@ Then you can use GNU Parallel to run them simultaneously:
 ~$ parallel < jobs.txt
 ```
 
-## Configurations
-Instead of having a plethora of command line switches, bard uses a JSON file for runtime configurations.
 
-If you don't have a configuration file, do this:
-```shell
-~$ python bard.py
-```
-
-bard will helpfully print out the configuration template and associated help text. Let's explore the options in more detail:
-
-* **read_length_histogram**:   true/false. Do you want to plot the historam?  
-
-## TODO
-* Add support for eukaryotic organisms
-* Parallel processing of multiple BAM files without help from external programs
-* Documentation
 
 
 ## Contact
