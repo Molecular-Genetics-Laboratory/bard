@@ -1014,9 +1014,9 @@ def offset_delta_for_metagene():
 
         offsets_a = subset_integer_progression(offsets_a, continuity=progression)
 
-    save_file(offsets_p, "psite_offsets")
-    save_file(offsets_e, "esite_offsets")
-    save_file(offsets_a, "asite_offsets")
+    save_file(offsets_p, "psite_offsets", verbose=global_config["filename_verbosity"])
+    save_file(offsets_e, "esite_offsets", verbose=global_config["filename_verbosity"])
+    save_file(offsets_a, "asite_offsets", verbose=global_config["filename_verbosity"])
 
 
 def read_genes_from_file(filename):
@@ -1105,7 +1105,7 @@ def parse_gff():
             "refname": annolist[i][0],
         }
 
-    save_file(annotation, "Annotations")
+    save_file(annotation, "Annotations", verbose=global_config["filename_verbosity"])
 
 
 def index_of_value(vector, value):
@@ -1177,7 +1177,6 @@ def script_init():
         suffix=suffix,
         img_dir=img_dir + "/",  # this breaks Windows compatibility
         data_dir=data_dir + "/",
-        img_id="_{}_{}".format(prefix, str(dt.now().strftime("%I-%M-%S%p"))),
         log_file="{}/{}_logfile_for_{}_{}.txt".format(
             basename, session_id, prefix, str(dt.now().strftime("%I-%M-%S%p"))
         ),
@@ -1275,6 +1274,20 @@ def script_init():
     # #nucleotides downstream of start codon to include in metagene
     if "endmap_downstream" not in global_config:
         global_config["endmap_downstream"] = 200
+
+    # Specify BAM file name, timestamp etc in output files?
+    if "filename_verbosity" not in global_config:
+        global_config["filename_verbosity"] = False
+
+    # Verbosity of plot file names
+    if global_config["filename_verbosity"]:
+
+        global_config["img_id"] = "_{}_{}".format(
+            prefix, str(dt.now().strftime("%I-%M-%S%p"))
+        )
+
+    else:
+        global_config["img_id"] = ""
 
     # We calculate the read coverage for a few additional nucleotides
     # upstream of endmap_upstream and downstream of endmap_downstream,
@@ -1381,10 +1394,15 @@ def check_gene_list():
     )
 
 
-def save_file(data, filename):
+def save_file(data, filename, verbose=False):
     """
     Dump an object to disk as JSON
     """
+    if verbose:
+        suffix = global_config["suffix"]
+    else:
+        suffix = ""
+
     try:
         save_json(
             data,
@@ -1392,7 +1410,7 @@ def save_file(data, filename):
                 global_config["data_dir"],
                 global_config["session_id"],
                 filename,
-                global_config["suffix"],
+                suffix,
             ),
         )
     except:
@@ -1407,6 +1425,7 @@ def generate_coverage_profiles(include_genes=[], disabled=False):
     Extract the read coverage profile for all genes
     """
     if disabled:
+        notify("Coverage profile is disabled", level="warn")
         return
 
     for gene, details in annotation.items():
@@ -1424,7 +1443,11 @@ def generate_coverage_profiles(include_genes=[], disabled=False):
         ).copy()
 
     # dump the coverage information
-    save_file(coverage_profile, "read_coverage_profile")
+    save_file(
+        coverage_profile,
+        "read_coverage_profile",
+        verbose=global_config["filename_verbosity"],
+    )
 
 
 def get_coverage(start, stop, reference, strand, mode="mean"):
@@ -1561,7 +1584,7 @@ def plot_metagene_per_readlength(plot_title="", figsize_x=10, figsize_y=8, labsi
         fname_line = "metagene_kmer_offset"
         fname_bar = "metagene_kmer_framing_offset"
 
-    save_file(savedata, fname_line)
+    save_file(savedata, fname_line, verbose=global_config["filename_verbosity"])
 
     plt.savefig(
         "{}{}_{}_{}.svg".format(
@@ -1748,7 +1771,9 @@ def calculate_gene_coverages(mode="reads_per_nt"):
     for index in range(len(tmp_tuple)):
         gene_coverages[tmp_tuple[index][0]] = tmp_tuple[index][1]
 
-    save_file(gene_coverages, "gene_coverages")
+    save_file(
+        gene_coverages, "gene_coverages", verbose=global_config["filename_verbosity"]
+    )
 
 
 def plot_initiation_peak(peak=False, peak_range=[]):
@@ -1797,7 +1822,9 @@ def plot_initiation_peak(peak=False, peak_range=[]):
         "start_metagene": metagene_vector.tolist(),
     }
 
-    save_file(start_data, "start_position_peak")
+    save_file(
+        start_data, "initiation_peak", verbose=global_config["filename_verbosity"]
+    )
 
     plt.xlabel("Nt from CDS start", fontsize=18)
     plt.ylabel("A.U.", fontsize=18)
@@ -1856,7 +1883,11 @@ def get_max_coverage_genes():
         if coverage >= coverage_cutoff:
             high_coverage_genes.append(gene_name)
 
-    save_file(high_coverage_genes, "high_coverage_genes")
+    save_file(
+        high_coverage_genes,
+        "high_coverage_genes",
+        verbose=global_config["filename_verbosity"],
+    )
 
 
 def skip_read(
@@ -2210,7 +2241,7 @@ def map_gene_to_endmaps(
     genes_used = []
 
     notify(
-        "{} genes in high coverage list, out of {}".format(
+        "{} gene(s) in high coverage list (out of {} total)".format(
             len(high_coverage_genes), len(annotation.keys())
         ),
         level="notf",
@@ -2293,17 +2324,29 @@ def map_gene_to_endmaps(
         level="warn",
     )
     notify("{} gene(s) processed in total".format(len(genes_processed)), level="notf")
-    notify(
-        "{} gene(s) skipped out of {} in annotation".format(
-            len(overall_skipped), len(annotation.keys())
-        ),
-        level="warn",
-    )
+    # notify(
+    #     "{} gene(s) skipped out of {} total".format(
+    #         len(overall_skipped), len(annotation.keys())
+    #     ),
+    #     level="warn",
+    # )
 
     # print out the gene names which were in the high coverage list but skipped
-    save_file(unique(track_overlaps), "skipped_genes_overlaps_endmaps.json")
-    save_file(unique(track_coverages), "skipped_genes_low_coverage_endmaps.json")
-    save_file(unique(genes_used), "genes_used_endmaps.json")
+    save_file(
+        unique(track_overlaps),
+        "skipped_genes_overlaps_endmaps.json",
+        verbose=global_config["filename_verbosity"],
+    )
+    save_file(
+        unique(track_coverages),
+        "skipped_genes_low_coverage_endmaps.json",
+        verbose=global_config["filename_verbosity"],
+    )
+    save_file(
+        unique(genes_used),
+        "genes_used_endmaps.json",
+        verbose=global_config["filename_verbosity"],
+    )
 
 
 def normalize_counts(vector):
@@ -2418,7 +2461,7 @@ def reading_frame(ignore_read_by_nt={5: [], 3: []}):
                     offset = offset_dict[read.reference_length]
                 except:
                     notify(
-                        "Fragment length {} has no offset".format(
+                        "RPF length {} has no offset".format(
                             read.reference_length
                         ),
                         level="warn",
@@ -2452,7 +2495,11 @@ def reading_frame(ignore_read_by_nt={5: [], 3: []}):
                 skipped_other += 1
                 pass
 
-    save_file(reads_in_frame, "global_reading_frame")
+    save_file(
+        reads_in_frame,
+        "global_reading_frame",
+        verbose=global_config["filename_verbosity"],
+    )
 
     return reads_in_frame
 
@@ -2523,7 +2570,7 @@ def plot_metagene_over_codon(codon_list, site="P"):
             pps = pps_vector_per_gene[site][gene_name]["pps"]
         except:
             notify(
-                "{} does not have a positional pause vector".format(gene_name),
+                "No positional pause data for {}".format(gene_name),
                 level="warn",
             )
             continue
@@ -2532,7 +2579,7 @@ def plot_metagene_over_codon(codon_list, site="P"):
             seq = pps_vector_per_gene[site][gene_name]["seq"]
         except:
             notify(
-                "{} does not have a transcript sequence".format(gene_name),
+                "No transcript sequence for {}".format(gene_name),
                 level="warn",
             )
             continue
@@ -2559,7 +2606,11 @@ def plot_metagene_over_codon(codon_list, site="P"):
                 cmetagene.append(val)
 
     data = {"position": x, "positional_pause": cmetagene}
-    save_file(data, "data_metagene_over_codon_{}".format("+".join(codon_list)))
+    save_file(
+        data,
+        "data_metagene_over_codon_{}".format("+".join(codon_list)),
+        verbose=global_config["filename_verbosity"],
+    )
 
     cmetagene = np.apply_along_axis(np.mean, 0, np.array(cmetagene))
     # cmetagene = np.sum(cmetagene, axis=0)
@@ -2593,7 +2644,11 @@ def plot_reading_frame(framedict):
     x = ["Frame 1", "Frame 2", "Frame 3"]
     y = np.array([framedict[1], framedict[2], framedict[3]]) / framedict["total"]
 
-    save_file({"frame": x, "fraction_reads": y.tolist()}, "data_global_reading_frame")
+    save_file(
+        {"frame": x, "fraction_reads": y.tolist()},
+        "data_global_reading_frame",
+        verbose=global_config["filename_verbosity"],
+    )
 
     plt.bar(x, y, edgecolor="black", color="dodgerblue")[0].set_color("#d53f04")
     plt.title("{}".format(global_config["prefix"]))
@@ -2665,7 +2720,7 @@ def plot_stop_peak(leftpos=10, rightpos=0):
         "positions": x.tolist(),
         "stop_pos_metagene": metagene.tolist(),
     }
-    save_file(data, "data_stop_metagene")
+    save_file(data, "termination_peak", verbose=global_config["filename_verbosity"])
 
 
 def calculate_pause_score(site="P"):
@@ -2719,7 +2774,7 @@ def calculate_pause_score(site="P"):
         # Ignore gene sequences with premature stop codons
         if bool(stopcodon & set(seq[: len(seq) - 1])):
             notify(
-                "{} has premature stop codon. Skipping.".format(gene_name), level="warn"
+                "Premature stop codon in {}. Skipping.".format(gene_name), level="warn"
             )
             continue
 
@@ -2761,55 +2816,71 @@ def calculate_pause_score(site="P"):
             # pauselist = pauselist[pauselist != 0]
             codon_pauselist[site][codon] = np.mean(pauselist)
 
-    save_file(pps_vector_per_gene, "positional_pauses_universal")
-    save_file(codon_pauselist, "per_codon_pause_scores_universal")
+    save_file(
+        pps_vector_per_gene,
+        "positional_pauses_universal",
+        verbose=global_config["filename_verbosity"],
+    )
+    save_file(
+        codon_pauselist,
+        "per_codon_pause_scores_universal",
+        verbose=global_config["filename_verbosity"],
+    )
 
     notify(
-        "{} gene(s) skipped because sequence is unavailable".format(
+        "{} gene(s) skipped. No sequence data".format(
             len(skipped_transcripts)
         ),
         level="warn",
     )
 
     notify(
-        "{} gene(s) skipped because density vector is unavailable".format(
+        "{} gene(s) skipped. No density data".format(
             len(skipped_density)
         ),
         level="warn",
     )
 
     notify(
-        "{} gene(s) skipped due to sequences-density length mismatch".format(
+        "{} gene(s) skipped. Vector length mismatch".format(
             len(skipped_mismatch)
         ),
         level="warn",
     )
 
     notify(
-        "{} gene(s) skiped because length not multiple of 3".format(
+        "{} gene(s) skiped. Length not multiple of 3".format(
             len(skipped_truncated)
         )
     )
 
-    notify("{} gene(s) skipped due to low coverage".format(len(skippped_coverage)))
+    notify("{} gene(s) skipped. Low coverage".format(len(skippped_coverage)))
 
     # Write out genes skipped in pause score
     save_file(
-        unique(skipped_transcripts), "skipped_gene_no_sequence_pps_{}.json".format(site)
+        unique(skipped_transcripts),
+        "skipped_gene_no_sequence_pps_{}.json".format(site),
+        verbose=global_config["filename_verbosity"],
     )
     save_file(
-        unique(skipped_density), "skipped_gene_no_density_pps_{}.json".format(site)
+        unique(skipped_density),
+        "skipped_gene_no_density_pps_{}.json".format(site),
+        verbose=global_config["filename_verbosity"],
     )
     save_file(
         unique(skipped_mismatch),
         "skipped_gene_sequence_density_length_mismatch_{}.json".format(site),
+        verbose=global_config["filename_verbosity"],
     )
     save_file(
         unique(skipped_truncated),
         "skipped_gene_not_multiple_3_pps_{}.json".format(site),
+        verbose=global_config["filename_verbosity"],
     )
     save_file(
-        unique(skippped_coverage), "skipped_gene_low_coverage_pps_{}.json".format(site)
+        unique(skippped_coverage),
+        "skipped_gene_low_coverage_pps_{}.json".format(site),
+        verbose=global_config["filename_verbosity"],
     )
 
 
@@ -3003,7 +3074,7 @@ def plot_pauses_combined():
     aa_pause_data = {"AA": aa, "Pause": ps}
 
     if (aa["E"] != aa["P"]) or (aa["E"] != aa["A"]):
-        notify("Amino acid pause: AA order mismatch", level="warn")
+        notify("Amino acid order mismatch. Heatmap will be unreliable", level="warn")
 
     #### HEATMAP (amino acids)########
     fig, (ax1, ax2, ax3) = plt.subplots(3, 1, sharex=True)
@@ -3109,8 +3180,16 @@ def plot_pauses_combined():
 
     plt.close()
 
-    save_file(pps_metagene_data, "pps_metagene")
-    save_file(aa_pause_data, "per_aa_pause_scores")
+    save_file(
+        pps_metagene_data,
+        "positional_pause_score_metagene",
+        verbose=global_config["filename_verbosity"],
+    )
+    save_file(
+        aa_pause_data,
+        "per_amino_acid_pause_scores",
+        verbose=global_config["filename_verbosity"],
+    )
 
 
 def read_length_histogram():
@@ -3136,7 +3215,7 @@ def read_length_histogram():
                 continue
             if read.reference_length > 50:
                 notify(
-                    "Histogram: found read of length > 50nt",
+                    "Found read of length > 50nt",
                     level="warn",
                     onetime=True,
                 )
@@ -3166,7 +3245,9 @@ def read_length_histogram():
 
     plt.close()
 
-    save_file(readlens, "read_lengths")
+    save_file(
+        readlens, "read_lengths_histogram", verbose=global_config["filename_verbosity"]
+    )
 
 
 def read_terminal_stats():
@@ -3214,7 +3295,11 @@ def read_terminal_stats():
 
             terminal_basecount["totalreads"] += 1
 
-    save_file(terminal_basecount, "terminal_base_fraction")
+    save_file(
+        terminal_basecount,
+        "terminal_base_fraction",
+        verbose=global_config["filename_verbosity"],
+    )
 
     xaxis = ["A", "T", "G", "C"]
 
@@ -3282,7 +3367,7 @@ def calculate_asymmetry_scores():
 
         if len(densities) < 100:
             notify(
-                "asymmetry score: {} too short. Skipped.".format(
+                "{} too short. Skipped.".format(
                     gene_name, level="warn"
                 )
             )
@@ -3295,7 +3380,7 @@ def calculate_asymmetry_scores():
 
         if (rho_sum_3p == 0) or (rho_sum_5p == 0):
             notify(
-                "asymmetry score: No density profile for {}. Skipped.".format(
+                "{} skipped. No density data".format(
                     gene_name
                 ),
                 level="warn",
@@ -3306,7 +3391,9 @@ def calculate_asymmetry_scores():
         asymmetry[gene_name] = asymmetry_score
         tmp_asc.append(asymmetry_score)
 
-    save_file(asymmetry, "asymmetry_scores")
+    save_file(
+        asymmetry, "asymmetry_scores", verbose=global_config["filename_verbosity"]
+    )
 
     colors = ["dodgerblue"]
     box = plt.boxplot(tmp_asc, vert=False, notch=True, patch_artist=True)
@@ -3401,7 +3488,11 @@ def consistency_score_per_transcript():
         "intercept": c,
     }
 
-    save_file(consistency_dict, "consistency data")
+    save_file(
+        consistency_dict,
+        "consistency data",
+        verbose=global_config["filename_verbosity"],
+    )
 
     regression_function = np.poly1d(m, c)
 
@@ -3493,7 +3584,7 @@ def calculate_densities_over_genes():
     lengths = global_config["readlengths"]
 
     skipped = []
-    notify("{} gene(s) have endmap_vectors".format(len(endmap_vectors["P"].keys())))
+    # notify("{} gene(s) have endmap_vectors".format(len(endmap_vectors["P"].keys())))
 
     for gene, endmaps_per_readlength in endmap_vectors["P"].items():
         # WARNING: These values are not normalized by any means.
@@ -3506,7 +3597,7 @@ def calculate_densities_over_genes():
 
         if len(tmp) == 0:
             notify(
-                "{}: no coverage data, can't determine densities".format(gene),
+                "No coverage information for {}. Density won't be calculated".format(gene),
                 level="warn",
             )
             continue
@@ -3529,7 +3620,7 @@ def calculate_densities_over_genes():
 
         if len(tmp) == 0:
             notify(
-                "{}: no coverage data, can't determine densities".format(gene),
+                "No coverage information for {}. Density won't be calculated".format(gene),
                 level="warn",
             )
             continue
@@ -3552,7 +3643,7 @@ def calculate_densities_over_genes():
 
         if len(tmp) == 0:
             notify(
-                "{}: no coverage data, can't determine densities".format(gene),
+                "No coverage information for {}. Density won't be calculated".format(gene),
                 level="warn",
             )
             continue
@@ -3566,8 +3657,12 @@ def calculate_densities_over_genes():
         del tmp[:]
 
     # Taking P as representarive for E and A but this function should be rewritten
-    notify("calculated densities for {} gene(s)".format(len(ribosome_dentities["P"])))
-    save_file(unique(skipped), "skipped_genes_no_coverage_density.json")
+    notify("Density information available for {} gene(s)".format(len(ribosome_dentities["P"])))
+    save_file(
+        unique(skipped),
+        "skipped_genes_no_coverage_density.json",
+        verbose=global_config["filename_verbosity"],
+    )
 
 
 def main():
@@ -3607,12 +3702,12 @@ def main():
 
     check_gene_list()
 
-    notify("Determining terminal base fractions")
+    notify("Checking terminal base fractions")
     read_terminal_stats()
 
-    notify("Found {} genes in annotation file".format(len(annotation)))
+    notify("Found {} gene(s) in annotation".format(len(annotation)))
 
-    notify("Plotting read length histogram")
+    notify("Plotting RPF length histogram")
     read_length_histogram()
 
     notify(
@@ -3626,21 +3721,21 @@ def main():
     notify("Scanning for aligned read terminals (no offset)")
     map_gene_to_endmaps(apply_offset=False)
 
-    notify("Generating metagene vector")
+    notify("Processing metagene")
     generate_metagene_vector()
 
-    notify("Determining offsets")
+    notify("Checking offsets")
     offset_delta_for_metagene()
 
-    notify("Plotting metagene per read length (without offsets)")
+    notify("Plotting metagene per RPF length (without offsets)")
     plot_metagene_per_readlength()
 
-    notify("Mapping genes to endmaps (with offsets)")
+    notify("Scanning for aligned read terminals (with offsets)")
     map_gene_to_endmaps(
         apply_offset=True, only_reads_with_codons={"E": [], "P": [], "A": []}
     )
 
-    notify("Calculating ribosome densities")
+    notify("Checking ribosome densities")
     calculate_densities_over_genes()
 
     notify("Calculating pause scores")
@@ -3660,7 +3755,6 @@ def main():
     # notify("Consistency score per transcript is disabled")
     # consistency_score_per_transcript()
 
-    notify("Metagene profile over codons is disabled")
     # metagene_over_codon(aa_to_codon["A"], mode="combined") # serine
     # metagene_over_codon([aa_to_codon["S"], aa_to_codon["A"]], mode="composite")
     try:
@@ -3668,23 +3762,27 @@ def main():
         codonlist = global_config["codon_metagene_list"]
         metagene_over_codon(expand_to_codon(codonlist), mode=cm_mode)
     except:
-        notify("No metagene for codons specified, skipping", level="warn")
+        notify("Metagene over codons is disabled")
 
-    notify("Determining reading frame")
+    notify("Checking reading frame")
     plot_reading_frame(reading_frame(ignore_read_by_nt={5: [], 3: []}))
 
-    notify("Generating metagene")
+    notify("Processing metagene")
     generate_metagene_vector()
 
-    save_file(ribosome_dentities, "ribosome_dentities")
+    save_file(
+        ribosome_dentities,
+        "ribosome_dentities",
+        verbose=global_config["filename_verbosity"],
+    )
 
-    notify("Plotting metagene per read length (with offsets)")
+    notify("Plotting metagene per RPF length (with offsets)")
     plot_metagene_per_readlength()
 
     notify("Plotting initiation peak")
     plot_initiation_peak(peak=True, peak_range=[5, 25])
 
-    notify("Coverage profile is disabled")
+    notify("Checking coverage profile")
     generate_coverage_profiles(disabled=True)
 
     notify("Cleaning up")
