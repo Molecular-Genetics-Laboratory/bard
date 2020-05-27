@@ -2461,9 +2461,7 @@ def reading_frame(ignore_read_by_nt={5: [], 3: []}):
                     offset = offset_dict[read.reference_length]
                 except:
                     notify(
-                        "RPF length {} has no offset".format(
-                            read.reference_length
-                        ),
+                        "RPF length {} has no offset".format(read.reference_length),
                         level="warn",
                         onetime=True,
                     )
@@ -2570,8 +2568,7 @@ def plot_metagene_over_codon(codon_list, site="P"):
             pps = pps_vector_per_gene[site][gene_name]["pps"]
         except:
             notify(
-                "No positional pause data for {}".format(gene_name),
-                level="warn",
+                "No positional pause data for {}".format(gene_name), level="warn",
             )
             continue
 
@@ -2579,8 +2576,7 @@ def plot_metagene_over_codon(codon_list, site="P"):
             seq = pps_vector_per_gene[site][gene_name]["seq"]
         except:
             notify(
-                "No transcript sequence for {}".format(gene_name),
-                level="warn",
+                "No transcript sequence for {}".format(gene_name), level="warn",
             )
             continue
 
@@ -2828,31 +2824,21 @@ def calculate_pause_score(site="P"):
     )
 
     notify(
-        "{} gene(s) skipped. No sequence data".format(
-            len(skipped_transcripts)
-        ),
+        "{} gene(s) skipped. No sequence data".format(len(skipped_transcripts)),
         level="warn",
     )
 
     notify(
-        "{} gene(s) skipped. No density data".format(
-            len(skipped_density)
-        ),
+        "{} gene(s) skipped. No density data".format(len(skipped_density)),
         level="warn",
     )
 
     notify(
-        "{} gene(s) skipped. Vector length mismatch".format(
-            len(skipped_mismatch)
-        ),
+        "{} gene(s) skipped. Vector length mismatch".format(len(skipped_mismatch)),
         level="warn",
     )
 
-    notify(
-        "{} gene(s) skiped. Length not multiple of 3".format(
-            len(skipped_truncated)
-        )
-    )
+    notify("{} gene(s) skiped. Length not multiple of 3".format(len(skipped_truncated)))
 
     notify("{} gene(s) skipped. Low coverage".format(len(skippped_coverage)))
 
@@ -3215,9 +3201,7 @@ def read_length_histogram():
                 continue
             if read.reference_length > 50:
                 notify(
-                    "Found read of length > 50nt",
-                    level="warn",
-                    onetime=True,
+                    "Found read of length > 50nt", level="warn", onetime=True,
                 )
                 continue
 
@@ -3366,11 +3350,7 @@ def calculate_asymmetry_scores():
     for gene_name, densities in ribosome_dentities["P"].items():
 
         if len(densities) < 100:
-            notify(
-                "{} too short. Skipped".format(
-                    gene_name, level="warn"
-                )
-            )
+            notify("{} too short. Skipped".format(gene_name, level="warn"))
             continue
 
         # Ignore the first and last 50nt of the gene
@@ -3380,10 +3360,7 @@ def calculate_asymmetry_scores():
 
         if (rho_sum_3p == 0) or (rho_sum_5p == 0):
             notify(
-                "{} skipped. No density data".format(
-                    gene_name
-                ),
-                level="warn",
+                "{} skipped. No density data".format(gene_name), level="warn",
             )
             continue
 
@@ -3597,7 +3574,9 @@ def calculate_densities_over_genes():
 
         if len(tmp) == 0:
             notify(
-                "No coverage information for {}. Density won't be calculated".format(gene),
+                "No coverage information for {}. Density won't be calculated".format(
+                    gene
+                ),
                 level="warn",
             )
             continue
@@ -3620,7 +3599,9 @@ def calculate_densities_over_genes():
 
         if len(tmp) == 0:
             notify(
-                "No coverage information for {}. Density won't be calculated".format(gene),
+                "No coverage information for {}. Density won't be calculated".format(
+                    gene
+                ),
                 level="warn",
             )
             continue
@@ -3643,7 +3624,9 @@ def calculate_densities_over_genes():
 
         if len(tmp) == 0:
             notify(
-                "No coverage information for {}. Density won't be calculated".format(gene),
+                "No coverage information for {}. Density won't be calculated".format(
+                    gene
+                ),
                 level="warn",
             )
             continue
@@ -3657,7 +3640,11 @@ def calculate_densities_over_genes():
         del tmp[:]
 
     # Taking P as representarive for E and A but this function should be rewritten
-    notify("Density information available for {} gene(s)".format(len(ribosome_dentities["P"])))
+    notify(
+        "Density information available for {} gene(s)".format(
+            len(ribosome_dentities["P"])
+        )
+    )
     save_file(
         unique(skipped),
         "skipped_genes_no_coverage_density.json",
