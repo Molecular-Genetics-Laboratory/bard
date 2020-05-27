@@ -11,7 +11,6 @@ from datetime import datetime as dt
 
 def main():
     idstr  = str(dt.now().strftime("%H-%M-%S-%d-%m-%Y"))
-    idrand = "%05x" % random.randrange(16*1e6)
     fi     = "bard.py"
     fo     = "tmp.xyz"
 
@@ -21,8 +20,8 @@ def main():
     for line in fhin:
         if "versionstr =" in line:
             fhout.write(
-            "versionstr = \"bard v0.1 ID={}-{}\"\n".format(
-                idstr, idrand
+            "versionstr = \"bard v1.0 ID={}\"\n".format(
+                idstr
               )
             )
         else:

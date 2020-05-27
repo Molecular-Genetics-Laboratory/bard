@@ -54,7 +54,7 @@ np.random.seed(12345)
 
 # This line is automatically updated before each commit
 # Do not edit
-versionstr = "bard v0.1 ID=22-19-29-27-05-2020-d16ab4"
+versionstr = "bard v1.0 ID=22-21-22-27-05-2020"
 
 codon_to_aa = {
     "ATA": "I",
