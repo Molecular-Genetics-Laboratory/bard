@@ -54,7 +54,7 @@ np.random.seed(12345)
 
 # This line is automatically updated before each commit
 # Do not edit
-versionstr = "bard v1.0 ID=14-29-15-27-03-2020"
+versionstr = "bard v0.1 ID=22-19-29-27-05-2020-d16ab4"
 
 codon_to_aa = {
     "ATA": "I",
@@ -3367,7 +3367,7 @@ def calculate_asymmetry_scores():
 
         if len(densities) < 100:
             notify(
-                "{} too short. Skipped.".format(
+                "{} too short. Skipped".format(
                     gene_name, level="warn"
                 )
             )
