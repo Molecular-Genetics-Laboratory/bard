@@ -1,5 +1,5 @@
 # --------------------------------------------------------------------------
-# bard: Batch Analyzer of Ribo-seq Data
+# bard: Batch Analyzer of Ribo-seq Datasets
 #
 # Version 1.0
 #
@@ -467,7 +467,7 @@ CONFIG_TMP = """{
     "annotation_file_path": "/home/user/path/to/annotation.gff",
     "annotation_feature_tag": "ID",
     "bam_file_path": "/home/user/path/to/alignment.bam",
-    "read_offset_terminal": "five_prime",
+    "check_offset_from": "five_prime",
     "coverage_cutoff": 40,
     "coverage_metric": "reads_per_nt",
     "will_ignore_overlaps": true,
@@ -537,7 +537,7 @@ marked with a star(*):
 --------------------------------------+--------------------------------------------------
 *5. bam_file_path:                    |  Absolute path to the alignment file (BAM)
 --------------------------------------+--------------------------------------------------
-*6. read_offset_terminal:             |  Calculate the P/E/A site offsets for either
+*6. check_offset_from:                |  Calculate the P/E/A site offsets for either
                                       |  "five_prime" or "three_prime" ends of the reads
 --------------------------------------+--------------------------------------------------
 *7. will_ignore_overlaps:             |  Ignore overlapping genes? true or false(boolean)
@@ -1064,7 +1064,7 @@ def parse_gff():
 
         if gene_name in all_gene_names:
             notify(
-                "Found duplicate annotation. Will tag and ignore.",
+                "Found duplicate annotation, will tag and ignore",
                 level="warn",
                 onetime=True,
             )
@@ -1105,7 +1105,7 @@ def parse_gff():
             "refname": annolist[i][0],
         }
 
-    save_file(annotation, "Annotations", verbose=global_config["filename_verbosity"])
+    save_file(annotation, "annotation", verbose=global_config["filename_verbosity"])
 
 
 def index_of_value(vector, value):
@@ -1129,7 +1129,7 @@ def script_init():
 
     suffix = "_{}_{}_offsets_{}".format(
         prefix,
-        global_config["read_offset_terminal"],
+        global_config["check_offset_from"],
         str(dt.now().strftime("%I-%M-%S%p")),
     )
 
@@ -1139,7 +1139,7 @@ def script_init():
     basename = "{}_Results_{}_{}_offsets_on_{}".format(
         session_id,  # prevents any screwy conflicts
         prefix,
-        global_config["read_offset_terminal"],
+        global_config["check_offset_from"],
         str(dt.now().strftime("%d-%b-%Y_at_%I-%M-%S%p")),
     )
 
@@ -1159,10 +1159,10 @@ def script_init():
     os.makedirs(data_dir)
 
     # Set the progression type for p-site offsets
-    if global_config["read_offset_terminal"] == "five_prime":
+    if global_config["check_offset_from"] == "five_prime":
         progression = "increasing"
 
-    if global_config["read_offset_terminal"] == "three_prime":
+    if global_config["check_offset_from"] == "three_prime":
         progression = "decreasing"
 
     # Set up the file paths
@@ -1329,7 +1329,7 @@ def check_gene_list():
     except:
         notify(
             "Gene list file or associated action not mentioned.\
-                     Skipping.",
+                     Skipping",
             level="warn",
         )
         return
@@ -1352,7 +1352,7 @@ def check_gene_list():
     try:
         genelist = read_genes_from_file(listfile)
     except:
-        notify("No gene list provided. Moving on.", level="warn")
+        notify("No gene list provided, moving on", level="warn")
         return
 
     if listaction not in actions:
@@ -1543,6 +1543,7 @@ def plot_metagene_per_readlength(plot_title="", figsize_x=10, figsize_y=8, labsi
             break
 
         palette = next(colors)["color"]
+        # palette = "#AF0D6B"
         ax[axiscount].plot(
             x_vector, metagene_vector, label="{} mer".format(rpf_len), color=palette
         )
@@ -1803,7 +1804,7 @@ def plot_initiation_peak(peak=False, peak_range=[]):
 
     metagene_vector = np.sum(combined_vectors, axis=0)
 
-    plt.plot(xaxis, metagene_vector, color="black")
+    plt.plot(xaxis, metagene_vector, color="#AF0D6B", linewidth=3)
 
     if peak and len(peak_range) != 0:
 
@@ -1812,7 +1813,7 @@ def plot_initiation_peak(peak=False, peak_range=[]):
         )
         plt.axvline(x=delta, color="r")
         plt.text(
-            peakpos + 0.4, -2, delta, rotation=0, color="black", weight="bold"
+            peakpos + 0.4, -1.7, delta, rotation=0, color="black", weight="bold"
         )  # 0.4 to keep the text away from the line
 
     start_data = {  # include the plot configurations as well?
@@ -1952,7 +1953,7 @@ def terminal_alignment_positions_per_readlength(
     upto_downstrm_nt = global_config["endmap_downstream"]
     bamfile = global_config["bamfile"]
     _buffer_ = global_config["mapping_buffer"]
-    terminal_map = global_config["read_offset_terminal"]
+    terminal_map = global_config["check_offset_from"]
     read_lengths = global_config["readlengths"]
 
     if offset_site == "P":
@@ -2324,12 +2325,6 @@ def map_gene_to_endmaps(
         level="warn",
     )
     notify("{} gene(s) processed in total".format(len(genes_processed)), level="notf")
-    # notify(
-    #     "{} gene(s) skipped out of {} total".format(
-    #         len(overall_skipped), len(annotation.keys())
-    #     ),
-    #     level="warn",
-    # )
 
     # print out the gene names which were in the high coverage list but skipped
     save_file(
@@ -2381,7 +2376,7 @@ def reading_frame(ignore_read_by_nt={5: [], 3: []}):
     reads_in_frame = {}
     kmer_include = global_config["readlengths"]
 
-    offset_direction = global_config["read_offset_terminal"]
+    offset_direction = global_config["check_offset_from"]
 
     offset_dict = offsets_p
 
@@ -2682,7 +2677,7 @@ def plot_stop_peak(leftpos=10, rightpos=0):
     tmp = np.array(tmp)
     metagene = np.sum(tmp, axis=0)
     x = np.array([i for i in range(0, 150, 1)][::-1])
-    plt.plot(x, metagene, color="black")
+    plt.plot(x, metagene, color="#AF0D6B", linewidth=3)
 
     peakpos, delta, _ = get_offset(
         xvec=x, yvec=metagene, right_bound=rightpos, left_bound=leftpos
@@ -2824,23 +2819,34 @@ def calculate_pause_score(site="P"):
     )
 
     notify(
-        "{} gene(s) skipped. No sequence data".format(len(skipped_transcripts)),
+        "{} gene(s) skipped, no sequence data".format(len(skipped_transcripts)),
         level="warn",
+        onetime=True,
     )
 
     notify(
-        "{} gene(s) skipped. No density data".format(len(skipped_density)),
+        "{} gene(s) skipped, no density data".format(len(skipped_density)),
         level="warn",
+        onetime=True,
     )
 
     notify(
-        "{} gene(s) skipped. Vector length mismatch".format(len(skipped_mismatch)),
+        "{} gene(s) skipped, vector length mismatch".format(len(skipped_mismatch)),
         level="warn",
+        onetime=True,
     )
 
-    notify("{} gene(s) skiped. Length not multiple of 3".format(len(skipped_truncated)))
+    notify(
+        "{} gene(s) skipped, length not multiple of 3".format(len(skipped_truncated)),
+        level="warn",
+        onetime=True,
+    )
 
-    notify("{} gene(s) skipped. Low coverage".format(len(skippped_coverage)))
+    notify(
+        "{} gene(s) skipped, low coverage".format(len(skippped_coverage)),
+        level="warn",
+        onetime=True,
+    )
 
     # Write out genes skipped in pause score
     save_file(
@@ -2884,7 +2890,7 @@ def plot_pauses_combined():
 
     xvec = [i for i in range(1, 151, 1)]
     pps_metagene = np.mean(pps_metagene, axis=0)
-    plt.plot(xvec, pps_metagene, color="k")
+    plt.plot(xvec, pps_metagene, color="#AF0D6B", linewidth=3)
     plt.xlabel("Codons from CDS start", fontsize=18)
     plt.ylabel("Positional pause score", fontsize=18)
     plt.xticks(fontsize=15)
@@ -3350,7 +3356,7 @@ def calculate_asymmetry_scores():
     for gene_name, densities in ribosome_dentities["P"].items():
 
         if len(densities) < 100:
-            notify("{} too short. Skipped".format(gene_name, level="warn"))
+            notify("{} too short, skipped".format(gene_name), level="warn")
             continue
 
         # Ignore the first and last 50nt of the gene
@@ -3360,7 +3366,7 @@ def calculate_asymmetry_scores():
 
         if (rho_sum_3p == 0) or (rho_sum_5p == 0):
             notify(
-                "{} skipped. No density data".format(gene_name), level="warn",
+                "{} skipped, no density data".format(gene_name), level="warn",
             )
             continue
 
