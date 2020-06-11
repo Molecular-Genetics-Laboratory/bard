@@ -1593,7 +1593,7 @@ def plot_metagene_per_readlength(plot_title="", figsize_x=10, figsize_y=8, labsi
             global_config["session_id"],
             fname_line,
             global_config["img_id"],
-        )
+        ), bbox_inches='tight',pad_inches = 0.2
     )
 
     plt.close()
@@ -1653,7 +1653,7 @@ def plot_metagene_per_readlength(plot_title="", figsize_x=10, figsize_y=8, labsi
             global_config["session_id"],
             fname_bar,
             global_config["img_id"],
-        )
+        ), bbox_inches='tight',pad_inches = 0.2
     )
 
     plt.close()
@@ -1840,7 +1840,7 @@ def plot_initiation_peak(peak=False, peak_range=[]):
             global_config["session_id"],
             "start_peak",
             global_config["img_id"],
-        )
+        ), bbox_inches='tight',pad_inches = 0.2
     )
 
     plt.close()
@@ -1863,7 +1863,7 @@ def plot_initiation_peak(peak=False, peak_range=[]):
             global_config["session_id"],
             "start_peak_framing",
             global_config["img_id"],
-        )
+        ), bbox_inches='tight',pad_inches = 0.2
     )
 
     plt.close()
@@ -2621,7 +2621,7 @@ def plot_metagene_over_codon(codon_list, site="P"):
             global_config["session_id"],
             "metagene_over_codon_{}".format("+".join(codon_list)),
             global_config["img_id"],
-        )
+        ), bbox_inches='tight',pad_inches = 0.2
     )
 
     plt.close()
@@ -2654,7 +2654,7 @@ def plot_reading_frame(framedict):
             global_config["session_id"],
             "reading_frame",
             global_config["img_id"],
-        )
+        ), bbox_inches='tight',pad_inches = 0.2
     )
 
     plt.close()
@@ -2700,7 +2700,7 @@ def plot_stop_peak(leftpos=10, rightpos=0):
             global_config["session_id"],
             "stop_peak",
             global_config["img_id"],
-        )
+        ), bbox_inches='tight',pad_inches = 0.2
     )
 
     plt.close()
@@ -2905,7 +2905,7 @@ def plot_pauses_combined():
             global_config["session_id"],
             "pps_over_genes",
             global_config["img_id"],
-        )
+        ), bbox_inches='tight',pad_inches = 0.2
     )
 
     plt.close()
@@ -2975,7 +2975,7 @@ def plot_pauses_combined():
             global_config["session_id"],
             "pause_score_codon",
             global_config["img_id"],
-        )
+        ), bbox_inches='tight',pad_inches = 0.2
     )
 
     plt.close()
@@ -3027,7 +3027,7 @@ def plot_pauses_combined():
             global_config["session_id"],
             "pause_score_codon_bar",
             global_config["img_id"],
-        )
+        ), bbox_inches='tight',pad_inches = 0.2
     )
 
     plt.close()
@@ -3116,7 +3116,7 @@ def plot_pauses_combined():
             global_config["session_id"],
             "pause_score_aa",
             global_config["img_id"],
-        )
+        ), bbox_inches='tight',pad_inches = 0.2
     )
 
     plt.close()
@@ -3167,7 +3167,7 @@ def plot_pauses_combined():
             global_config["session_id"],
             "pause_score_aa_bar",
             global_config["img_id"],
-        )
+        ), bbox_inches='tight',pad_inches = 0.2
     )
 
     plt.close()
@@ -3230,7 +3230,7 @@ def read_length_histogram():
             global_config["session_id"],
             "read_length_histogram",
             global_config["img_id"],
-        )
+        ), bbox_inches='tight',pad_inches = 0.2
     )
 
     plt.close()
@@ -3332,7 +3332,7 @@ def read_terminal_stats():
             global_config["session_id"],
             "basestat",
             global_config["img_id"],
-        )
+        ), bbox_inches='tight',pad_inches = 0.2
     )
 
     plt.close()
@@ -3398,7 +3398,7 @@ def calculate_asymmetry_scores():
             global_config["session_id"],
             "asymmetry_score",
             global_config["img_id"],
-        )
+        ), bbox_inches='tight',pad_inches = 0.2
     )
 
     plt.close()
@@ -3506,7 +3506,7 @@ def consistency_score_per_transcript():
             global_config["session_id"],
             "consistency_plot",
             global_config["img_id"],
-        )
+        ), bbox_inches='tight',pad_inches = 0.2
     )
 
     plt.close()
