@@ -1804,7 +1804,7 @@ def plot_initiation_peak(peak=False, peak_range=[]):
 
     metagene_vector = np.sum(combined_vectors, axis=0)
 
-    plt.plot(xaxis, metagene_vector, color="#AF0D6B", linewidth=3)
+    plt.plot(xaxis, metagene_vector, color="dodgerblue", linewidth=3)
 
     if peak and len(peak_range) != 0:
 
@@ -1828,8 +1828,8 @@ def plot_initiation_peak(peak=False, peak_range=[]):
     )
 
     plt.xlabel("Nt from CDS start", fontsize=18)
-    plt.ylabel("A.U.", fontsize=18)
-    plt.xticks(fontsize=15)
+    plt.ylabel("A.U.", fontsize=18) # 18
+    plt.xticks(fontsize=15) # 15
     plt.yticks(fontsize=15)
 
     plt.tight_layout()
@@ -1845,14 +1845,22 @@ def plot_initiation_peak(peak=False, peak_range=[]):
 
     plt.close()
 
-    bars = plt.bar(xaxis[50:170], metagene_vector[50:170], color="#11a0ff")
+    # # Original
+    # bars = plt.bar(xaxis[50:170], metagene_vector[50:170], color="#11a0ff")
+    # for item in bars[::3]:
+    #     item.set_color("#ff5842")
 
-    for item in bars[::3]:
+    bars = plt.bar(xaxis[:150], metagene_vector[:150], color="#11a0ff")
+
+    for item in bars[50:][::3]:
+        item.set_color("#ff5842")
+
+    for item in bars[:51][::-3]:
         item.set_color("#ff5842")
 
     plt.xlabel("Nt from CDS start", fontsize=18)
-    plt.ylabel("A.U.", fontsize=18)
-    plt.xticks(fontsize=15)
+    plt.ylabel("A.U.", fontsize=18) #18
+    plt.xticks(fontsize=15) #15
     plt.yticks(fontsize=15)
 
     plt.tight_layout()
@@ -2632,7 +2640,7 @@ def plot_reading_frame(framedict):
     Bar plot of reading frame fractions.
     """
 
-    x = ["Frame 1", "Frame 2", "Frame 3"]
+    x = ["1", "2", "3"]
     y = np.array([framedict[1], framedict[2], framedict[3]]) / framedict["total"]
 
     save_file(
@@ -2640,12 +2648,13 @@ def plot_reading_frame(framedict):
         "data_global_reading_frame",
         verbose=global_config["filename_verbosity"],
     )
-
+    plt.gcf().set_size_inches(6.5,5)
     plt.bar(x, y, edgecolor="black", color="dodgerblue")[0].set_color("#d53f04")
-    plt.title("{}".format(global_config["prefix"]))
+    # plt.title("{}".format(global_config["prefix"]))
     plt.xticks(fontsize=15)
     plt.yticks(fontsize=12)
     plt.ylabel("Read fraction", fontsize=15)
+    plt.xlabel("Reading frame", fontsize=15)
     plt.ylim(0, 1)
     plt.tight_layout()
     plt.savefig(
@@ -2677,16 +2686,16 @@ def plot_stop_peak(leftpos=10, rightpos=0):
     tmp = np.array(tmp)
     metagene = np.sum(tmp, axis=0)
     x = np.array([i for i in range(0, 150, 1)][::-1])
-    plt.plot(x, metagene, color="#AF0D6B", linewidth=3)
+    plt.plot(x, metagene, color="dodgerblue", linewidth=3)
 
     peakpos, delta, _ = get_offset(
         xvec=x, yvec=metagene, right_bound=rightpos, left_bound=leftpos
     )
 
     plt.xlabel("Nt from CDS stop", fontsize=18)
-    plt.ylabel("A.U.", fontsize=18)
+    plt.ylabel("A.U.", fontsize=18) # 18
 
-    plt.xticks(fontsize=15)
+    plt.xticks(fontsize=15) #15
     plt.yticks(fontsize=15)
 
     plt.xlim(150, 0)
@@ -2890,10 +2899,10 @@ def plot_pauses_combined():
 
     xvec = [i for i in range(1, 151, 1)]
     pps_metagene = np.mean(pps_metagene, axis=0)
-    plt.plot(xvec, pps_metagene, color="#AF0D6B", linewidth=3)
+    plt.plot(xvec, pps_metagene, color="dodgerblue", linewidth=3)
     plt.xlabel("Codons from CDS start", fontsize=18)
-    plt.ylabel("Positional pause score", fontsize=18)
-    plt.xticks(fontsize=15)
+    plt.ylabel("Positional pause score", fontsize=18) # 18
+    plt.xticks(fontsize=15) # 15
     plt.yticks(fontsize=15)
 
     plt.gcf().set_size_inches(19, 5)
@@ -3214,13 +3223,14 @@ def read_length_histogram():
             readlens.append(read.reference_length)
 
     # bins = [i for i in range(20,41,1)
+    plt.gcf().set_size_inches(6.5,5)
     plt.hist(readlens, edgecolor="black", color="#1A9BE8")
     # plt.xticks(bins)
-    plt.title("Read length distribution")
+    # plt.title("Read length distribution")
     plt.xlabel("Read length", fontsize=15)
     plt.ylabel("Frequency", fontsize=15)
     plt.ticklabel_format(axis="y", style="sci", scilimits=(0, 0))
-    plt.title("{}".format(global_config["prefix"]))
+    # plt.title("{}".format(global_config["prefix"]))
 
     plt.tight_layout()
 
@@ -3315,6 +3325,7 @@ def read_terminal_stats():
     r2 = [x + barWidth for x in r1]
 
     # Make the plot
+    plt.gcf().set_size_inches(6.9,5.4)
     plt.bar(r1, y3, color="#1A9BE8", width=barWidth, edgecolor="black", label="3' end")
     plt.bar(r2, y5, color="#E83F1A", width=barWidth, edgecolor="black", label="5' end")
 
@@ -3325,7 +3336,7 @@ def read_terminal_stats():
     # Create legend & Show graphic
     plt.legend()
 
-    plt.title("Terminal read fractions ({})".format(global_config["prefix"]))
+    # plt.title("Terminal read fractions ({})".format(global_config["prefix"]))
     plt.savefig(
         "{}{}_{}_{}.svg".format(
             global_config["img_dir"],
@@ -3379,6 +3390,7 @@ def calculate_asymmetry_scores():
     )
 
     colors = ["dodgerblue"]
+    plt.gcf().set_size_inches(6.5,5)
     box = plt.boxplot(tmp_asc, vert=False, notch=True, patch_artist=True)
 
     for patch, color in zip(box["boxes"], colors):
@@ -3386,10 +3398,10 @@ def calculate_asymmetry_scores():
 
     # plt.xlabel("log2(sum(#rpfs 3' half)/sum(#rpfs 5' half)")
     plt.xlabel("Asymmetry score", fontsize=15)
+    plt.ylabel("n = {}".format(len(high_coverage_genes)), fontsize=15)
     plt.xticks(fontsize=15)
-    plt.title("Asymmetry score distribution ({})".format(global_config["prefix"]))
+    # plt.title("Asymmetry score distribution ({})".format(global_config["prefix"]))
     plt.axvline(x=0, color="red", linestyle="--")
-    plt.gcf().set_size_inches(6, 4)
     plt.tight_layout()
 
     plt.savefig(
