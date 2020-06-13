@@ -443,10 +443,10 @@ offsets_e = {}  # P-site
 offsets_p = {}  # E-site
 offsets_a = {}  # A-site
 # gene name --> ribosome density vector
-ribosome_dentities = {}
-ribosome_dentities["E"] = {}
-ribosome_dentities["P"] = {}
-ribosome_dentities["A"] = {}
+ribosome_densities = {}
+ribosome_densities["E"] = {}
+ribosome_densities["P"] = {}
+ribosome_densities["A"] = {}
 # gene name --> cds sequence
 transcripts_dict = {}
 # gene name --> cds sequence in codons &
@@ -749,7 +749,7 @@ def reset():
     endmap_vectors.clear()
     metagene_per_len.clear()
     overlap_dict.clear()
-    ribosome_dentities.clear()
+    ribosome_densities.clear()
     transcripts_dict.clear()
     pps_vector_per_gene.clear()
     offsets_p.clear()
@@ -2677,7 +2677,7 @@ def plot_stop_peak(leftpos=10, rightpos=0):
     # This would bring both the start and stop metagenes
     # on the same scale
     tmp = []
-    for vector in ribosome_dentities["P"].values():
+    for vector in ribosome_densities["P"].values():
         if len(vector) < 150:
             continue
 
@@ -2754,7 +2754,7 @@ def calculate_pause_score(site="P"):
             continue
 
         try:
-            rds = ribosome_dentities[site][gene_name]
+            rds = ribosome_densities[site][gene_name]
         except:
             skipped_density.append(gene_name)
             continue
@@ -3364,7 +3364,7 @@ def calculate_asymmetry_scores():
     asymmetry = {}
     tmp_asc = []  # temporarily store scores in a list for box plot
 
-    for gene_name, densities in ribosome_dentities["P"].items():
+    for gene_name, densities in ribosome_densities["P"].items():
 
         if len(densities) < 100:
             notify("{} too short, skipped".format(gene_name), level="warn")
@@ -3603,7 +3603,7 @@ def calculate_densities_over_genes():
         tmp = np.apply_along_axis(sum, 0, tmp)
         # trimming out the flanking regions we added
         tmp = tmp[up : len(tmp) - dn]
-        ribosome_dentities["P"][gene] = tmp.tolist().copy()
+        ribosome_densities["P"][gene] = tmp.tolist().copy()
         tmp = tmp.tolist()
         del tmp[:]
 
@@ -3628,7 +3628,7 @@ def calculate_densities_over_genes():
         tmp = np.apply_along_axis(sum, 0, tmp)
         # trimming out the flanking regions we added
         tmp = tmp[up : len(tmp) - dn]
-        ribosome_dentities["E"][gene] = tmp.tolist().copy()
+        ribosome_densities["E"][gene] = tmp.tolist().copy()
         tmp = tmp.tolist()
         del tmp[:]
 
@@ -3653,14 +3653,14 @@ def calculate_densities_over_genes():
         tmp = np.apply_along_axis(sum, 0, tmp)
         # trimming out the flanking regions we added
         tmp = tmp[up : len(tmp) - dn]
-        ribosome_dentities["A"][gene] = tmp.tolist().copy()
+        ribosome_densities["A"][gene] = tmp.tolist().copy()
         tmp = tmp.tolist()
         del tmp[:]
 
     # Taking P as representarive for E and A but this function should be rewritten
     notify(
         "Density information available for {} gene(s)".format(
-            len(ribosome_dentities["P"])
+            len(ribosome_densities["P"])
         )
     )
     save_file(
@@ -3776,8 +3776,8 @@ def main():
     generate_metagene_vector()
 
     save_file(
-        ribosome_dentities,
-        "ribosome_dentities",
+        ribosome_densities,
+        "ribosome_densities",
         verbose=global_config["filename_verbosity"],
     )
 
