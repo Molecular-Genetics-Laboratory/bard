@@ -54,7 +54,7 @@ np.random.seed(12345)
 
 # This line is automatically updated before each commit
 # Do not edit
-versionstr = "bard v1.0 ID=22-21-22-27-05-2020"
+versionstr = "bard v1.0 ID=00-25-23-17-06-2020"
 
 codon_to_aa = {
     "ATA": "I",
@@ -421,6 +421,9 @@ aa_to_codon = {
 global_config = {}
 # GFF
 annotation = {}
+# Plot output names --> path
+# used for report generation
+plotnames = {}
 # Keep a track of the warnings emitted
 __warnings = []
 # gene name --> read length -->
@@ -458,6 +461,156 @@ pps_vector_per_gene["A"] = {}
 # gene name --> read coverage profile vector
 coverage_profile = {}
 
+
+# HTML report template
+report = """
+<!DOCTYPE html>
+
+<head>
+<meta charset="UTF-8">
+
+<title>Report</title>
+
+<style type="text/css">
+
+p {{
+text-indent: 50px;
+}}
+
+.img-row {{
+display: flex;
+}}
+
+.img-column {{
+flex: 3.33%;
+padding: 5px;
+}}
+
+.img-center {{
+max-width: 95%;
+max-height: 95vh;
+margin: auto;
+}}
+
+.reportBody {{
+font: bold 25px;
+text-align: left;
+padding: 25px;
+box-shadow: 0 0 5px #ccc;
+width: 90%;
+margin:0 auto;
+font-family: "Sans";
+}}
+
+.navbar {{
+font-size: 27px;
+padding: 15px;
+background-color: #2e8ccf;
+font-family: "Sans";
+color: #ffffff;
+overflow: hidden;
+position: fixed;
+text-align: center;
+box-shadow: 0 0 20px #ccc;
+width: 99%;
+top: 0;
+margin:0 auto;
+}}
+
+#program {{
+float: left;
+text-align: left;
+}}
+
+#info {{
+float: right;
+text-align: right;
+padding: 0px 25px;
+}}
+</style>
+</head>
+
+<body>
+
+<div class="navbar">
+<span id="program">
+bard v1.0
+</span>
+
+<span id="header">
+Analysis report
+</span>
+
+<span id="info">
+4th October 2019
+</span>
+</div>
+
+<br> </br>
+<br> </br>
+
+<div class="reportBody">
+
+<h1> <p> Diagnostics </p> </h1>
+
+<div class="img-row">
+<div class="img-column">
+{}
+{}
+</div>
+<div class="img-column">
+{}
+{}
+</div>
+</div>
+
+<hr>
+<h1> <p> P-site offsets </p> </h1>
+<div class="img-row">
+<div class="img-column">
+{}
+</div>
+<div class="img-column">
+{}
+</div>
+</div>
+<hr>
+
+<h1> <p> Initiation signal </p> </h1>
+{}
+{}
+<hr>
+
+<h1> <p> Termination signal </p> </h1>
+{}
+<hr>
+
+<h1> <p> Positional pause score </p> </h1>
+{}
+<hr>
+
+
+<h1> <p> Pause score (per codon) </p> </h1>
+<h2> <p> Heatmap </p> </h2>
+{}
+<h2> <p> Barplot </p> </h2>
+{}
+<br>
+<hr>
+
+<h1> <p> Pause score (per amino acid) </p> </h1>
+<h2> <p> Heatmap </p> </h2>
+{}
+<h2> <p> Barplot </p> </h2>
+{}
+
+
+</div>
+
+</body>
+
+</html>
+"""
 
 # Template configuration, to be printed out when
 # no input is provided.
@@ -1494,6 +1647,8 @@ def plot_metagene_per_readlength(plot_title="", figsize_x=10, figsize_y=8, labsi
     """
     Plot the metagene vectors for each RPF read length
     (with and without offsets)
+
+    TODO: This function needs a rewrite.
     """
 
     up = global_config["endmap_upstream"]
@@ -1542,8 +1697,8 @@ def plot_metagene_per_readlength(plot_title="", figsize_x=10, figsize_y=8, labsi
         if plotcount == MAX_PLOTS + 1:
             break
 
-        palette = next(colors)["color"]
-        # palette = "#AF0D6B"
+        # palette = next(colors)["color"]
+        palette = "dodgerblue"
         ax[axiscount].plot(
             x_vector, metagene_vector, label="{} mer".format(rpf_len), color=palette
         )
@@ -1575,26 +1730,42 @@ def plot_metagene_per_readlength(plot_title="", figsize_x=10, figsize_y=8, labsi
     fig.text(0.5, 0.04, "Nt from CDS start", ha="center", fontsize=labsize)
     fig.text(0.04, 0.5, "A.U.", va="center", rotation="vertical", fontsize=labsize)
 
-    fname_line = ""  # Ugly. I know.
-    fname_bar = ""
-
     if global_config["metagene_callcount"] == 0:
         fname_line = "metagene_kmer_no_offset"
-        fname_bar = "metagene_kmer_framing_no_offset"
+        i1 = "{}{}_{}_{}.svg".format(
+            global_config["img_dir"],
+            global_config["session_id"],
+            "metagene_kmer_no_offset",
+            global_config["img_id"],
+        )
+        i2 = "{}{}_{}_{}.svg".format(
+            global_config["img_dir"],
+            global_config["session_id"],
+            "metagene_kmer_framing_no_offset",
+            global_config["img_id"],
+        )
+        plotnames["kmer_metagene_no_offset"] = i1
+        plotnames["kmer_metabar_no_offset"] = i2
     else:
         fname_line = "metagene_kmer_offset"
-        fname_bar = "metagene_kmer_framing_offset"
+        i1 = "{}{}_{}_{}.svg".format(
+            global_config["img_dir"],
+            global_config["session_id"],
+            "metagene_kmer_offset",
+            global_config["img_id"],
+        )
+        i2 = "{}{}_{}_{}.svg".format(
+            global_config["img_dir"],
+            global_config["session_id"],
+            "metagene_kmer_framing_offset",
+            global_config["img_id"],
+        )
+        plotnames["kmer_metagene_with_offset"] = i1
+        plotnames["kmer_metabar_with_offset"] = i2
 
     save_file(savedata, fname_line, verbose=global_config["filename_verbosity"])
 
-    plt.savefig(
-        "{}{}_{}_{}.svg".format(
-            global_config["img_dir"],
-            global_config["session_id"],
-            fname_line,
-            global_config["img_id"],
-        ), bbox_inches='tight',pad_inches = 0.2
-    )
+    plt.savefig(i1, bbox_inches="tight", pad_inches=0.2)
 
     plt.close()
 
@@ -1648,12 +1819,7 @@ def plot_metagene_per_readlength(plot_title="", figsize_x=10, figsize_y=8, labsi
     fig.text(0.04, 0.5, "A.U.", va="center", rotation="vertical", fontsize=labsize)
 
     plt.savefig(
-        "{}{}_{}_{}.svg".format(
-            global_config["img_dir"],
-            global_config["session_id"],
-            fname_bar,
-            global_config["img_id"],
-        ), bbox_inches='tight',pad_inches = 0.2
+        i2, bbox_inches="tight", pad_inches=0.2,
     )
 
     plt.close()
@@ -1828,19 +1994,21 @@ def plot_initiation_peak(peak=False, peak_range=[]):
     )
 
     plt.xlabel("Nt from CDS start", fontsize=18)
-    plt.ylabel("A.U.", fontsize=18) # 18
-    plt.xticks(fontsize=15) # 15
+    plt.ylabel("A.U.", fontsize=18)  # 18
+    plt.xticks(fontsize=15)  # 15
     plt.yticks(fontsize=15)
 
     plt.tight_layout()
     plt.gcf().set_size_inches(19, 5)
+    i1 = "{}{}_{}_{}.svg".format(
+        global_config["img_dir"],
+        global_config["session_id"],
+        "start_peak",
+        global_config["img_id"],
+    )
+    plotnames["initiation"] = i1
     plt.savefig(
-        "{}{}_{}_{}.svg".format(
-            global_config["img_dir"],
-            global_config["session_id"],
-            "start_peak",
-            global_config["img_id"],
-        ), bbox_inches='tight',pad_inches = 0.2
+        i1, bbox_inches="tight", pad_inches=0.2,
     )
 
     plt.close()
@@ -1859,19 +2027,22 @@ def plot_initiation_peak(peak=False, peak_range=[]):
         item.set_color("#ff5842")
 
     plt.xlabel("Nt from CDS start", fontsize=18)
-    plt.ylabel("A.U.", fontsize=18) #18
-    plt.xticks(fontsize=15) #15
+    plt.ylabel("A.U.", fontsize=18)  # 18
+    plt.xticks(fontsize=15)  # 15
     plt.yticks(fontsize=15)
 
     plt.tight_layout()
     plt.gcf().set_size_inches(19, 5)
+
+    i2 = "{}{}_{}_{}.svg".format(
+        global_config["img_dir"],
+        global_config["session_id"],
+        "start_peak_framing",
+        global_config["img_id"],
+    )
+    plotnames["init_framing"] = i2
     plt.savefig(
-        "{}{}_{}_{}.svg".format(
-            global_config["img_dir"],
-            global_config["session_id"],
-            "start_peak_framing",
-            global_config["img_id"],
-        ), bbox_inches='tight',pad_inches = 0.2
+        i2, bbox_inches="tight", pad_inches=0.2,
     )
 
     plt.close()
@@ -2337,17 +2508,17 @@ def map_gene_to_endmaps(
     # print out the gene names which were in the high coverage list but skipped
     save_file(
         unique(track_overlaps),
-        "skipped_genes_overlaps_endmaps.json",
+        "skipped_genes_overlaps_endmaps",
         verbose=global_config["filename_verbosity"],
     )
     save_file(
         unique(track_coverages),
-        "skipped_genes_low_coverage_endmaps.json",
+        "skipped_genes_low_coverage_endmaps",
         verbose=global_config["filename_verbosity"],
     )
     save_file(
         unique(genes_used),
-        "genes_used_endmaps.json",
+        "genes_used_endmaps",
         verbose=global_config["filename_verbosity"],
     )
 
@@ -2622,14 +2793,15 @@ def plot_metagene_over_codon(codon_list, site="P"):
             "+".join(codon_list), global_config["prefix"]
         )
     )
-
+    i1 = "{}{}_{}_{}.svg".format(
+        global_config["img_dir"],
+        global_config["session_id"],
+        "metagene_over_codon_{}".format("+".join(codon_list)),
+        global_config["img_id"],
+    )
+    plotnames["metagene_over_codon"] = i1
     plt.savefig(
-        "{}{}_{}_{}.svg".format(
-            global_config["img_dir"],
-            global_config["session_id"],
-            "metagene_over_codon_{}".format("+".join(codon_list)),
-            global_config["img_id"],
-        ), bbox_inches='tight',pad_inches = 0.2
+        i1, bbox_inches="tight", pad_inches=0.2,
     )
 
     plt.close()
@@ -2648,7 +2820,7 @@ def plot_reading_frame(framedict):
         "data_global_reading_frame",
         verbose=global_config["filename_verbosity"],
     )
-    plt.gcf().set_size_inches(6.5,5)
+    plt.gcf().set_size_inches(6.5, 5)
     plt.bar(x, y, edgecolor="black", color="dodgerblue")[0].set_color("#d53f04")
     # plt.title("{}".format(global_config["prefix"]))
     plt.xticks(fontsize=15)
@@ -2657,13 +2829,15 @@ def plot_reading_frame(framedict):
     plt.xlabel("Reading frame", fontsize=15)
     plt.ylim(0, 1)
     plt.tight_layout()
+    i1 = "{}{}_{}_{}.svg".format(
+        global_config["img_dir"],
+        global_config["session_id"],
+        "reading_frame",
+        global_config["img_id"],
+    )
+    plotnames["reading_frame"] = i1
     plt.savefig(
-        "{}{}_{}_{}.svg".format(
-            global_config["img_dir"],
-            global_config["session_id"],
-            "reading_frame",
-            global_config["img_id"],
-        ), bbox_inches='tight',pad_inches = 0.2
+        i1, bbox_inches="tight", pad_inches=0.2,
     )
 
     plt.close()
@@ -2693,23 +2867,24 @@ def plot_stop_peak(leftpos=10, rightpos=0):
     )
 
     plt.xlabel("Nt from CDS stop", fontsize=18)
-    plt.ylabel("A.U.", fontsize=18) # 18
+    plt.ylabel("A.U.", fontsize=18)  # 18
 
-    plt.xticks(fontsize=15) #15
+    plt.xticks(fontsize=15)  # 15
     plt.yticks(fontsize=15)
 
     plt.xlim(150, 0)
 
     plt.gcf().set_size_inches(19, 5)
     plt.tight_layout()
-
+    i1 = "{}{}_{}_{}.svg".format(
+        global_config["img_dir"],
+        global_config["session_id"],
+        "stop_peak",
+        global_config["img_id"],
+    )
+    plotnames["termination"] = i1
     plt.savefig(
-        "{}{}_{}_{}.svg".format(
-            global_config["img_dir"],
-            global_config["session_id"],
-            "stop_peak",
-            global_config["img_id"],
-        ), bbox_inches='tight',pad_inches = 0.2
+        i1, bbox_inches="tight", pad_inches=0.2,
     )
 
     plt.close()
@@ -2860,27 +3035,27 @@ def calculate_pause_score(site="P"):
     # Write out genes skipped in pause score
     save_file(
         unique(skipped_transcripts),
-        "skipped_gene_no_sequence_pps_{}.json".format(site),
+        "skipped_gene_no_sequence_pps_{}".format(site),
         verbose=global_config["filename_verbosity"],
     )
     save_file(
         unique(skipped_density),
-        "skipped_gene_no_density_pps_{}.json".format(site),
+        "skipped_gene_no_density_pps_{}".format(site),
         verbose=global_config["filename_verbosity"],
     )
     save_file(
         unique(skipped_mismatch),
-        "skipped_gene_sequence_density_length_mismatch_{}.json".format(site),
+        "skipped_gene_sequence_density_length_mismatch_{}".format(site),
         verbose=global_config["filename_verbosity"],
     )
     save_file(
         unique(skipped_truncated),
-        "skipped_gene_not_multiple_3_pps_{}.json".format(site),
+        "skipped_gene_not_multiple_3_pps_{}".format(site),
         verbose=global_config["filename_verbosity"],
     )
     save_file(
         unique(skippped_coverage),
-        "skipped_gene_low_coverage_pps_{}.json".format(site),
+        "skipped_gene_low_coverage_pps_{}".format(site),
         verbose=global_config["filename_verbosity"],
     )
 
@@ -2901,20 +3076,22 @@ def plot_pauses_combined():
     pps_metagene = np.mean(pps_metagene, axis=0)
     plt.plot(xvec, pps_metagene, color="dodgerblue", linewidth=3)
     plt.xlabel("Codons from CDS start", fontsize=18)
-    plt.ylabel("Positional pause score", fontsize=18) # 18
-    plt.xticks(fontsize=15) # 15
+    plt.ylabel("Positional pause score", fontsize=18)  # 18
+    plt.xticks(fontsize=15)  # 15
     plt.yticks(fontsize=15)
 
     plt.gcf().set_size_inches(19, 5)
     plt.tight_layout()
 
+    i1 = "{}{}_{}_{}.svg".format(
+        global_config["img_dir"],
+        global_config["session_id"],
+        "pps_over_genes",
+        global_config["img_id"],
+    )
+    plotnames["pps_metagene"] = i1
     plt.savefig(
-        "{}{}_{}_{}.svg".format(
-            global_config["img_dir"],
-            global_config["session_id"],
-            "pps_over_genes",
-            global_config["img_id"],
-        ), bbox_inches='tight',pad_inches = 0.2
+        i1, bbox_inches="tight", pad_inches=0.2,
     )
 
     plt.close()
@@ -2978,13 +3155,15 @@ def plot_pauses_combined():
     plt.gcf().set_size_inches(19, 5)
     plt.xticks(fontsize=15)
 
+    i2 = "{}{}_{}_{}.svg".format(
+        global_config["img_dir"],
+        global_config["session_id"],
+        "pause_score_codon",
+        global_config["img_id"],
+    )
+    plotnames["per_codon_pps_heatmap"] = i2
     plt.savefig(
-        "{}{}_{}_{}.svg".format(
-            global_config["img_dir"],
-            global_config["session_id"],
-            "pause_score_codon",
-            global_config["img_id"],
-        ), bbox_inches='tight',pad_inches = 0.2
+        i2, bbox_inches="tight", pad_inches=0.2,
     )
 
     plt.close()
@@ -3030,13 +3209,15 @@ def plot_pauses_combined():
     plt.xticks(fontsize=15, rotation=90)
     plt.gcf().set_size_inches(19, 8)
 
+    i3 = "{}{}_{}_{}.svg".format(
+        global_config["img_dir"],
+        global_config["session_id"],
+        "pause_score_codon_bar",
+        global_config["img_id"],
+    )
+    plotnames["per_codon_pps_barplot"] = i3
     plt.savefig(
-        "{}{}_{}_{}.svg".format(
-            global_config["img_dir"],
-            global_config["session_id"],
-            "pause_score_codon_bar",
-            global_config["img_id"],
-        ), bbox_inches='tight',pad_inches = 0.2
+        i3, bbox_inches="tight", pad_inches=0.2,
     )
 
     plt.close()
@@ -3119,13 +3300,15 @@ def plot_pauses_combined():
     plt.gcf().set_size_inches(19, 5)
     plt.xticks(fontsize=20)
 
+    i4 = "{}{}_{}_{}.svg".format(
+        global_config["img_dir"],
+        global_config["session_id"],
+        "pause_score_aa",
+        global_config["img_id"],
+    )
+    plotnames["per_aa_pps_heatmap"] = i4
     plt.savefig(
-        "{}{}_{}_{}.svg".format(
-            global_config["img_dir"],
-            global_config["session_id"],
-            "pause_score_aa",
-            global_config["img_id"],
-        ), bbox_inches='tight',pad_inches = 0.2
+        i4, bbox_inches="tight", pad_inches=0.2,
     )
 
     plt.close()
@@ -3169,14 +3352,15 @@ def plot_pauses_combined():
 
     plt.xticks(fontsize=18, rotation=0)
     plt.gcf().set_size_inches(19, 8)
-
+    i5 = "{}{}_{}_{}.svg".format(
+        global_config["img_dir"],
+        global_config["session_id"],
+        "pause_score_aa_bar",
+        global_config["img_id"],
+    )
+    plotnames["per_aa_pps_barplot"] = i5
     plt.savefig(
-        "{}{}_{}_{}.svg".format(
-            global_config["img_dir"],
-            global_config["session_id"],
-            "pause_score_aa_bar",
-            global_config["img_id"],
-        ), bbox_inches='tight',pad_inches = 0.2
+        i5, bbox_inches="tight", pad_inches=0.2,
     )
 
     plt.close()
@@ -3223,7 +3407,7 @@ def read_length_histogram():
             readlens.append(read.reference_length)
 
     # bins = [i for i in range(20,41,1)
-    plt.gcf().set_size_inches(6.5,5)
+    plt.gcf().set_size_inches(6.5, 5)
     plt.hist(readlens, edgecolor="black", color="#1A9BE8")
     # plt.xticks(bins)
     # plt.title("Read length distribution")
@@ -3234,13 +3418,15 @@ def read_length_histogram():
 
     plt.tight_layout()
 
+    i1 = "{}{}_{}_{}.svg".format(
+        global_config["img_dir"],
+        global_config["session_id"],
+        "read_length_histogram",
+        global_config["img_id"],
+    )
+    plotnames["read_length_histogram"] = i1
     plt.savefig(
-        "{}{}_{}_{}.svg".format(
-            global_config["img_dir"],
-            global_config["session_id"],
-            "read_length_histogram",
-            global_config["img_id"],
-        ), bbox_inches='tight',pad_inches = 0.2
+        i1, bbox_inches="tight", pad_inches=0.2,
     )
 
     plt.close()
@@ -3325,7 +3511,7 @@ def read_terminal_stats():
     r2 = [x + barWidth for x in r1]
 
     # Make the plot
-    plt.gcf().set_size_inches(6.9,5.4)
+    plt.gcf().set_size_inches(6.9, 5.4)
     plt.bar(r1, y3, color="#1A9BE8", width=barWidth, edgecolor="black", label="3' end")
     plt.bar(r2, y5, color="#E83F1A", width=barWidth, edgecolor="black", label="5' end")
 
@@ -3337,13 +3523,15 @@ def read_terminal_stats():
     plt.legend()
 
     # plt.title("Terminal read fractions ({})".format(global_config["prefix"]))
+    i1 = "{}{}_{}_{}.svg".format(
+        global_config["img_dir"],
+        global_config["session_id"],
+        "basestat",
+        global_config["img_id"],
+    )
+    plotnames["terminal_stats"] = i1
     plt.savefig(
-        "{}{}_{}_{}.svg".format(
-            global_config["img_dir"],
-            global_config["session_id"],
-            "basestat",
-            global_config["img_id"],
-        ), bbox_inches='tight',pad_inches = 0.2
+        i1, bbox_inches="tight", pad_inches=0.2,
     )
 
     plt.close()
@@ -3390,7 +3578,7 @@ def calculate_asymmetry_scores():
     )
 
     colors = ["dodgerblue"]
-    plt.gcf().set_size_inches(6.5,5)
+    plt.gcf().set_size_inches(6.5, 5)
     box = plt.boxplot(tmp_asc, vert=False, notch=True, patch_artist=True)
 
     for patch, color in zip(box["boxes"], colors):
@@ -3404,13 +3592,17 @@ def calculate_asymmetry_scores():
     plt.axvline(x=0, color="red", linestyle="--")
     plt.tight_layout()
 
+    i1 = "{}{}_{}_{}.svg".format(
+        global_config["img_dir"],
+        global_config["session_id"],
+        "asymmetry",
+        global_config["img_id"],
+    )
+
+    plotnames["asymmetry_score"] = i1
+
     plt.savefig(
-        "{}{}_{}_{}.svg".format(
-            global_config["img_dir"],
-            global_config["session_id"],
-            "asymmetry_score",
-            global_config["img_id"],
-        ), bbox_inches='tight',pad_inches = 0.2
+        i1, bbox_inches="tight", pad_inches=0.2,
     )
 
     plt.close()
@@ -3512,13 +3704,15 @@ def consistency_score_per_transcript():
     plt.ylabel("log2(sum(read count 5' half))")
     plt.suptitle("{}".format(global_config["prefix"]))
 
+    i1 = "{}{}_{}_{}.svg".format(
+        global_config["img_dir"],
+        global_config["session_id"],
+        "consistency_plot",
+        global_config["img_id"],
+    )
+    plotnames["consistency_score"] = i1
     plt.savefig(
-        "{}{}_{}_{}.svg".format(
-            global_config["img_dir"],
-            global_config["session_id"],
-            "consistency_plot",
-            global_config["img_id"],
-        ), bbox_inches='tight',pad_inches = 0.2
+        i1, bbox_inches="tight", pad_inches=0.2,
     )
 
     plt.close()
@@ -3665,7 +3859,7 @@ def calculate_densities_over_genes():
     )
     save_file(
         unique(skipped),
-        "skipped_genes_no_coverage_density.json",
+        "skipped_genes_no_coverage_density",
         verbose=global_config["filename_verbosity"],
     )
 
