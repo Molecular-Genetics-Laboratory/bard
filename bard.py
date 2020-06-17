@@ -463,8 +463,7 @@ coverage_profile = {}
 
 
 # HTML report template
-report = """
-<!DOCTYPE html>
+report = """<!DOCTYPE html>
 
 <head>
 <meta charset="UTF-8">
@@ -542,7 +541,7 @@ Analysis report
 </span>
 
 <span id="info">
-4th October 2019
+{}
 </span>
 </div>
 
@@ -604,11 +603,8 @@ Analysis report
 <h2> <p> Barplot </p> </h2>
 {}
 
-
 </div>
-
 </body>
-
 </html>
 """
 
@@ -1336,6 +1332,7 @@ def script_init():
         conf_file="{}/{}_runconfig_{}_{}.json".format(
             basename, session_id, prefix, str(dt.now().strftime("%I-%M-%S%p"))
         ),
+        report_file="{}/{}_Report.html".format(basename, session_id),
         session_id=session_id,
         prefix=prefix,
         script_version=versionstr,
@@ -3864,6 +3861,51 @@ def calculate_densities_over_genes():
     )
 
 
+def load_svg(imgpath):
+    """
+    Loads an SVG image (XML text)
+    and returns it for inclusion
+    in the HTML report
+    """
+    fh = open(imgpath, "r")
+    img = fh.read()
+    fh.close()
+    return img
+
+
+def generate_report(disabled=False):
+    """
+    Creates an HTML report of the analysis
+    """
+    if disabled:
+        notify("Report generation is disabled", level="warn")
+        return
+
+    repfh = open(global_config["report_file"], "w")
+
+    repfh.write(
+        report.format(
+            str(dt.now().strftime("%dth %B %Y")),
+            load_svg(plotnames["terminal_stats"]),
+            load_svg(plotnames["read_length_histogram"]),
+            load_svg(plotnames["asymmetry_score"]),
+            load_svg(plotnames["reading_frame"]),
+            load_svg(plotnames["kmer_metagene_no_offset"]),
+            load_svg(plotnames["kmer_metabar_with_offset"]),
+            load_svg(plotnames["initiation"]),
+            load_svg(plotnames["init_framing"]),
+            load_svg(plotnames["termination"]),
+            load_svg(plotnames["pps_metagene"]),
+            load_svg(plotnames["per_codon_pps_heatmap"]),
+            load_svg(plotnames["per_codon_pps_barplot"]),
+            load_svg(plotnames["per_aa_pps_heatmap"]),
+            load_svg(plotnames["per_aa_pps_barplot"]),
+        )
+    )
+
+    repfh.close()
+
+
 def main():
     print("----------------------------------------------------------------")
     print("               {}\n".format(versionstr))
@@ -3983,6 +4025,9 @@ def main():
 
     notify("Checking coverage profile")
     generate_coverage_profiles(disabled=True)
+
+    notify("Generating report")
+    generate_report(disabled=False)
 
     notify("Cleaning up")
     global_config["bamfile"].close()
