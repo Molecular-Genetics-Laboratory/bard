@@ -36,6 +36,7 @@ from Bio import SeqIO, SeqUtils
 import seaborn as sns
 import numpy as np
 import inspect
+import base64
 import random
 import pysam
 import json
@@ -554,12 +555,12 @@ Analysis report
 
 <div class="img-row">
 <div class="img-column">
-{}
-{}
+<img src="data:image/svg+xml;base64,{}" class="img-center"/>
+<img src="data:image/svg+xml;base64,{}" class="img-center"/>
 </div>
 <div class="img-column">
-{}
-{}
+<img src="data:image/svg+xml;base64,{}" class="img-center"/>
+<img src="data:image/svg+xml;base64,{}" class="img-center"/>
 </div>
 </div>
 
@@ -567,41 +568,41 @@ Analysis report
 <h1> <p> P-site offsets </p> </h1>
 <div class="img-row">
 <div class="img-column">
-{}
+<img src="data:image/svg+xml;base64,{}" class="img-center"/>
 </div>
 <div class="img-column">
-{}
+<img src="data:image/svg+xml;base64,{}" class="img-center"/>
 </div>
 </div>
 <hr>
 
 <h1> <p> Initiation signal </p> </h1>
-{}
-{}
+<img src="data:image/svg+xml;base64,{}" class="img-center"/>
+<img src="data:image/svg+xml;base64,{}" class="img-center"/>
 <hr>
 
 <h1> <p> Termination signal </p> </h1>
-{}
+<img src="data:image/svg+xml;base64,{}" class="img-center"/>
 <hr>
 
 <h1> <p> Positional pause score </p> </h1>
-{}
+<img src="data:image/svg+xml;base64,{}" class="img-center"/>
 <hr>
 
 
 <h1> <p> Pause score (per codon) </p> </h1>
 <h2> <p> Heatmap </p> </h2>
-{}
+<img src="data:image/svg+xml;base64,{}" class="img-center"/>
 <h2> <p> Barplot </p> </h2>
-{}
+<img src="data:image/svg+xml;base64,{}" class="img-center"/>
 <br>
 <hr>
 
 <h1> <p> Pause score (per amino acid) </p> </h1>
 <h2> <p> Heatmap </p> </h2>
-{}
+<img src="data:image/svg+xml;base64,{}" class="img-center"/>
 <h2> <p> Barplot </p> </h2>
-{}
+<img src="data:image/svg+xml;base64,{}" class="img-center"/>
 
 </div>
 </body>
@@ -3867,10 +3868,10 @@ def load_svg(imgpath):
     and returns it for inclusion
     in the HTML report
     """
-    fh = open(imgpath, "r")
-    img = fh.read()
-    fh.close()
-    return img
+    img = open(imgpath, "rb")
+    v = base64.b64encode(img.read()).decode('utf-8')
+    img.close()
+    return v
 
 
 def generate_report(disabled=False):
