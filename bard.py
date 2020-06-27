@@ -47,6 +47,16 @@ import os
 import matplotlib.pyplot as plt
 from matplotlib.pyplot import figure
 
+# Check if GUI toolkit is available
+TKINTER_INSTALLED = True
+try:
+    from tkinter import *
+    from tkinter import ttk
+    from tkinter import filedialog as fd
+except:
+    TKINTER_INSTALLED = False
+
+
 plt.rc("xtick", labelsize=12)
 plt.rc("ytick", labelsize=12)
 colors = plt.rcParams["axes.prop_cycle"]()
@@ -55,7 +65,7 @@ np.random.seed(12345)
 
 # This line is automatically updated before each commit
 # Do not edit
-versionstr = "bard v1.0 ID=21-14-25-27-06-2020"
+versionstr = "bard v1.0 ID=22-10-46-27-06-2020"
 
 codon_to_aa = {
     "ATA": "I",
@@ -3977,6 +3987,353 @@ def generate_report(disabled=False):
     repfh.close()
 
 
+class configuration_panel:
+    """
+    GUI to configure bard without using a JSON file.
+    """
+
+    def __init__(self, resizable):
+        self.w = Tk()
+        self.resizable = resizable
+        # annotation
+        self.anno_file_entry_text = StringVar()
+        self.anno_file = Entry(self.w, textvariable=self.anno_file_entry_text)
+        self.anno_file.grid(row=0, column=1, padx=10, pady=10)
+
+        # annotation feature tag
+        self.tag_file_entry_text = StringVar(self.w, "ID")
+        self.tag_file = Entry(self.w, textvariable=self.tag_file_entry_text)
+        self.tag_file.grid(row=1, column=1, padx=10, pady=10)
+
+        # CDS
+        self.cds_file_entry_text = StringVar()
+        self.cds_file = Entry(self.w, textvariable=self.cds_file_entry_text)
+        self.cds_file.grid(row=2, column=1, padx=10, pady=10)
+
+        # BAM
+        self.bam_file_entry_text = StringVar()
+        self.bam_file = Entry(self.w, textvariable=self.bam_file_entry_text)
+        self.bam_file.grid(row=3, column=1, padx=10, pady=10)
+
+        # Offset terminal
+        self.offsetvar = StringVar(self.w, "five_prime")
+
+        # read coveragr cutoff
+        self.rcov_file_entry_text = DoubleVar(self.w, 10)
+        self.rcov_file = Entry(self.w, textvariable=self.rcov_file_entry_text)
+        self.rcov_file.grid(row=5, column=1, padx=10, pady=10)
+
+        # read coverage metric
+        self.metricvar = StringVar(self.w, "rpkm")
+
+        # Ignore overlaps
+        self.overlapvar = BooleanVar(self.w, True)
+
+        # Peak scan range
+        self.psr_lower_file_entry_text = IntVar(self.w, -5)
+        self.psr_lower_file = Entry(self.w, textvariable=self.psr_lower_file_entry_text)
+        self.psr_lower_file.grid(row=8, column=1, padx=10, pady=10)
+
+        self.psr_upper_file_entry_text = IntVar(self.w, -20)
+        self.psr_upper_file = Entry(self.w, textvariable=self.psr_upper_file_entry_text)
+        self.psr_upper_file.grid(row=8, column=2, padx=10, pady=10)
+
+        # Readlengths
+        self.rdl_file_entry_text = StringVar(self.w, "26,27,28,29,30,31,32")
+        self.rdl_file = Entry(self.w, textvariable=self.rdl_file_entry_text)
+        self.rdl_file.grid(row=9, column=1, padx=10, pady=10)
+
+        # Gene list file
+        self.glf_file_entry_text = StringVar()
+        self.glf_file = Entry(self.w, textvariable=self.glf_file_entry_text)
+        self.glf_file.grid(row=10, column=1, padx=10, pady=10)
+
+        # Gene list action
+        self.glavar = StringVar(self.w)
+        # self.glavar.set("include_only") # default value
+
+        # Genes overlap exception
+        self.gex_file_entry_text = StringVar()
+        self.gex_file = Entry(self.w, textvariable=self.gex_file_entry_text)
+        self.gex_file.grid(row=12, column=1, padx=10, pady=10)
+
+    def file_dialog(self, entry_object, ftype):
+        if ftype == "gtf":
+            fhdr = "Select annotation file"
+            opts = (
+                ("GFF files", "*.gff"),
+                ("GTF files", "*.gtf"),
+                ("all files", "*.*"),
+            )
+        if ftype == "fasta":
+            fhdr = "Select fasta file"
+            opts = (("Fasta files", "*.fa"), ("all files", "*.*"))
+        if ftype == "bam":
+            fhdr = "Select BAM file"
+            opts = (("BAM files", "*.bam"), ("all files", "*.*"))
+        if ftype == "txt":
+            fhdr = "Select text file"
+            opts = (("Text files", "*.txt"), ("all files", "*.*"))
+
+        path = fd.askopenfilename(initialdir=os.getcwd(), title=fhdr, filetypes=opts,)
+
+        entry_object.set(path)
+
+    def update_global_conf(self, window):
+
+        global_config["coding_sequence_path"] = self.cds_file.get()
+        global_config["coding_sequence_format"] = "fasta"
+        global_config["annotation_file_path"] = self.anno_file.get()
+        global_config["annotation_feature_tag"] = self.tag_file.get()
+        global_config["bam_file_path"] = self.bam_file.get()
+        global_config["check_offset_from"] = self.offsetvar.get()  # check
+        global_config["coverage_cutoff"] = int(self.rcov_file.get())
+        global_config["coverage_metric"] = self.metricvar.get()  # check
+        global_config["will_ignore_overlaps"] = self.overlapvar.get()  # check
+        global_config["peak_scan_range"] = [
+            int(self.psr_lower_file.get()),
+            int(self.psr_upper_file.get()),
+        ]
+        global_config["use_readlengths"] = list(
+            map(int, self.rdl_file.get().lstrip(",").rstrip(",").strip(" ").split(","))
+        )
+        global_config["gene_list_file"] = self.glf_file.get()
+        global_config["gene_list_action"] = self.glavar.get()  # check
+        global_config["genes_overlap_exception"] = self.gex_file.get()
+        window.destroy()
+
+    def start(self):
+        # Setups
+        self.w.title("bard - Configuration Panel")
+        self.w.geometry("600x600")
+        self.w.configure(background="#EDDFCD")
+
+        if not self.resizable:
+            self.w.resizable(False, False)
+
+        # Annotation file
+        Label(
+            self.w,
+            text="Annotation file (*)",
+            justify=LEFT,
+            anchor="w",
+            background="#EDDFCD",
+        ).grid(sticky=W, row=0, column=0, padx=24, pady=10)
+        ttk.Button(
+            self.w,
+            text="Select file",
+            width=20,
+            command=lambda: self.file_dialog(
+                entry_object=self.anno_file_entry_text, ftype="gtf"
+            ),
+        ).grid(row=0, column=2, padx=10, pady=10)
+
+        # Annotation feature tag
+        Label(
+            self.w,
+            text="Annotation feature tag (*)",
+            justify=LEFT,
+            anchor="w",
+            background="#EDDFCD",
+        ).grid(sticky=W, row=1, column=0, padx=24, pady=10)
+
+        # CDS file
+        Label(
+            self.w, text="CDS file (*)", justify=LEFT, anchor="w", background="#EDDFCD"
+        ).grid(sticky=W, row=2, column=0, padx=24, pady=10)
+        ttk.Button(
+            self.w,
+            text="Select file",
+            width=20,
+            command=lambda: self.file_dialog(
+                entry_object=self.cds_file_entry_text, ftype="fasta"
+            ),
+        ).grid(row=2, column=2, padx=10, pady=10)
+
+        # BAM file
+        Label(
+            self.w,
+            text="Alignment file (*)",
+            justify=LEFT,
+            anchor="w",
+            background="#EDDFCD",
+        ).grid(sticky=W, row=3, column=0, padx=24, pady=10)
+        ttk.Button(
+            self.w,
+            text="Select file",
+            width=20,
+            command=lambda: self.file_dialog(
+                entry_object=self.bam_file_entry_text, ftype="bam"
+            ),
+        ).grid(row=3, column=2, padx=10, pady=10)
+
+        # Offset check
+        Label(
+            self.w,
+            text="Check P-site offset from",
+            justify=LEFT,
+            anchor="w",
+            background="#EDDFCD",
+        ).grid(sticky=W, row=4, column=0, padx=24, pady=10)
+        Radiobutton(
+            self.w,
+            text="5' end",
+            variable=self.offsetvar,
+            value="five_prime",
+            justify=LEFT,
+            anchor="w",
+            background="#EDDFCD",
+        ).grid(sticky=W, row=4, column=1, padx=10, pady=10)
+        Radiobutton(
+            self.w,
+            text="3' end",
+            variable=self.offsetvar,
+            value="three_prime",
+            justify=LEFT,
+            anchor="w",
+            background="#EDDFCD",
+        ).grid(sticky=W, row=4, column=2, padx=10, pady=10)
+
+        # Read coverage cutoff
+        Label(
+            self.w,
+            text="Read coverage cutoff",
+            justify=LEFT,
+            anchor="w",
+            background="#EDDFCD",
+        ).grid(sticky=W, row=5, column=0, padx=24, pady=10)
+
+        # Read coverage metric
+        Label(
+            self.w,
+            text="Read coverage metric",
+            justify=LEFT,
+            anchor="w",
+            background="#EDDFCD",
+        ).grid(sticky=W, row=6, column=0, padx=24, pady=10)
+        Radiobutton(
+            self.w,
+            text="Reads/nt (avg)",
+            variable=self.metricvar,
+            value="reads_per_nt",
+            justify=LEFT,
+            anchor="w",
+            background="#EDDFCD",
+        ).grid(sticky=W, row=6, column=1, padx=10, pady=10)
+        Radiobutton(
+            self.w,
+            text="RPKM",
+            variable=self.metricvar,
+            value="rpkm",
+            justify=LEFT,
+            anchor="w",
+            background="#EDDFCD",
+        ).grid(sticky=W, row=6, column=2, padx=10, pady=10)
+
+        # Read coverage metric
+        Label(
+            self.w,
+            text="Ignore overlapping genes",
+            justify=LEFT,
+            anchor="w",
+            background="#EDDFCD",
+        ).grid(sticky=W, row=7, column=0, padx=24, pady=10)
+        Radiobutton(
+            self.w,
+            text="Yes",
+            variable=self.overlapvar,
+            value=True,
+            justify=LEFT,
+            anchor="w",
+            background="#EDDFCD",
+        ).grid(sticky=W, row=7, column=1, padx=10, pady=10)
+        Radiobutton(
+            self.w,
+            text="No",
+            variable=self.overlapvar,
+            value=False,
+            justify=LEFT,
+            anchor="w",
+            background="#EDDFCD",
+        ).grid(sticky=W, row=7, column=2, padx=10, pady=10)
+
+        # Peak scan range
+        Label(
+            self.w,
+            text="Initiation scan window (nt)",
+            justify=LEFT,
+            anchor="w",
+            background="#EDDFCD",
+        ).grid(sticky=W, row=8, column=0, padx=24, pady=10)
+
+        # Readlengths
+        Label(
+            self.w,
+            text="Use readlengths (nt)",
+            justify=LEFT,
+            anchor="w",
+            background="#EDDFCD",
+        ).grid(sticky=W, row=9, column=0, padx=24, pady=10)
+
+        # Gene list file
+        Label(
+            self.w,
+            text="Arbitrary gene list",
+            justify=LEFT,
+            anchor="w",
+            background="#EDDFCD",
+        ).grid(sticky=W, row=10, column=0, padx=24, pady=10)
+        ttk.Button(
+            self.w,
+            text="Select file",
+            width=20,
+            command=lambda: self.file_dialog(
+                entry_object=self.glf_file_entry_text, ftype="txt"
+            ),
+        ).grid(row=10, column=2, padx=10, pady=10)
+
+        # Gene list action
+        Label(
+            self.w,
+            text="Gene list action",
+            justify=LEFT,
+            anchor="w",
+            background="#EDDFCD",
+        ).grid(sticky=W, row=11, column=0, padx=24, pady=10)
+        gla_menu = ttk.Combobox(self.w, textvariable=self.glavar)
+        gla_menu["values"] = ("include_only", "exclude_only", "exclude_balance")
+        gla_menu.grid(row=11, column=1, columnspan=2, padx=10, pady=10)
+
+        # Genes overlap exception
+        Label(
+            self.w,
+            text="Genes overlap allowed",
+            justify=LEFT,
+            anchor="w",
+            background="#EDDFCD",
+        ).grid(sticky=W, row=12, column=0, padx=24, pady=10)
+        ttk.Button(
+            self.w,
+            text="Select file",
+            width=20,
+            command=lambda: self.file_dialog(
+                entry_object=self.gex_file_entry_text, ftype="txt"
+            ),
+        ).grid(row=12, column=2, padx=10, pady=10)
+
+        # OK/Cancel
+        ttk.Button(
+            self.w, text="OK", width=20, command=lambda: self.update_global_conf(self.w)
+        ).grid(row=16, column=1, padx=10, pady=52)
+
+        ttk.Button(self.w, text="Cancel", width=20, command=self.w.destroy).grid(
+            row=16, column=2, padx=10, pady=52
+        )
+
+        # GUI main loop
+        self.w.mainloop()
+
+
 def main():
     print("----------------------------------------------------------------")
     print("               {}\n".format(versionstr))
@@ -3988,26 +4345,42 @@ def main():
     print("         GNU General Public License for more details.")
     print("----------------------------------------------------------------\n")
 
-    try:
-        set_config(load_json(sys.argv[1]))
-    except:
+    if sys.argv[1] == "--gui":
+        # Start GUI for configuration
+        if TKINTER_INSTALLED:
+            configuration_panel(resizable=False).start()
+            if len(global_config) == 0:
+                # Closed window without hitting OK
+                print("\nAborted\n")
+                raise SystemExit()
+        else:
+            print("\nCan't start the configuration GUI. Tkinter unavailable.\n")
+            print("You can either install python3-tk (depending on OS) or")
+            print("manually pass in the JSON configuration file like so:")
+            print("\n   $ python bard.py config.json\n")
+            raise SystemExit()
+    else:
+        # Default fallback to manual JSON config
+        try:
+            set_config(load_json(sys.argv[1]))
+        except:
 
-        fh = open("bard_config_template.json", "w")
-        ft = open("bard_config_help.txt", "w")
-        fh.write(CONFIG_TMP)
-        ft.write(CONFIG_HELP)
-        fh.close()
-        ft.close()
+            fh = open("bard_config_template.json", "w")
+            ft = open("bard_config_help.txt", "w")
+            fh.write(CONFIG_TMP)
+            ft.write(CONFIG_HELP)
+            fh.close()
+            ft.close()
 
-        print(
-            "\033[33m       ABORT: Malformed or non-existant configuration file\033[m\n"
-        )
-        print("  Usage: ")
-        print("         ~$ python bard.py config.json\n")
-        print("  A help file has been saved for your reference.\n")
-        print("  Bye!\n")
+            print(
+                "\033[33m       ABORT: Malformed or non-existant configuration file\033[m\n"
+            )
+            print("  Usage: ")
+            print("         ~$ python bard.py config.json\n")
+            print("  A help file has been saved for your reference.\n")
+            print("  Bye!\n")
 
-        raise SystemExit()
+            raise SystemExit()
 
     print("\n")
     script_init()
