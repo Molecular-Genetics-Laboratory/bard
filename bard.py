@@ -55,7 +55,7 @@ np.random.seed(12345)
 
 # This line is automatically updated before each commit
 # Do not edit
-versionstr = "bard v1.0 ID=00-25-23-17-06-2020"
+versionstr = "bard v1.0 ID=21-14-25-27-06-2020"
 
 codon_to_aa = {
     "ATA": "I",
@@ -442,6 +442,12 @@ overlap_dict = {}
 gene_coverages = {}
 # Genes with coverage above threshold
 high_coverage_genes = []
+# Genes which are, and are not, part of operons
+# Primarily for leaderless transcript detection
+operon_status = {"operon_members": [], "not_operon_members": []}
+# Gene name --> distance (nt) to nearest
+# upstream gene on the same strand
+genes_upstream_distance = {}
 # readlength --> signed integer offset
 offsets_e = {}  # P-site
 offsets_p = {}  # E-site
@@ -770,6 +776,55 @@ def save_json(data, file="object.json"):
         json.dump(data, write_file, indent=4)
 
 
+def running_sum_argmin(v):
+    """
+    Get the argument of minima of the running
+    sum vector of a read coverage profile.
+
+    This is the changepoint detection function
+    used to identify leaderless transcripts.
+    """
+    avg = np.mean(v)
+    rsvec = []
+    running_sum = 0
+    for i in v:
+        running_sum = running_sum + (i - avg)
+        rsvec.append(running_sum)  # running_sum.copy()
+
+    rsvec = np.array(rsvec)
+    # np.argmin() only returns the first minima,
+    # even though multiple may be present
+    return np.where(rsvec == min(rsvec))[0]
+
+
+def infer_operon_status():
+    """
+    Detect genes which are not members of operons.
+    Used for the detection of leaderless transcripts.
+
+    An override list can be supplied by the user
+    using the "operon_members_list" option.
+
+    NOTE: The user provided list is expected to consist of
+    genes which are members of operons, but are not the
+    first member. If nothing is provided, we select those
+    without an annotated gene on the same strand within
+    0 to -100nt of the annotated start position.
+    """
+
+    if global_config["operon_members_list"] != "":
+        # use the user supplied list
+        operon_members = read_genes_from_file(global_config["operon_members_list"])
+        for gene, details in annotation.items():
+            if gene not in operon_members:
+                operon_status["not_operon_members"].append(gene)
+            else:
+                operon_status["operon_members"].append(gene)
+        return
+
+    # We infer if operon members not supplied
+
+
 def extended_sort(x, by, reverse=False):
     """
     Takes two lists and sorts them based on the
@@ -1044,6 +1099,8 @@ def set_config(config):
 
 def get_offset(xvec, yvec, right_bound, left_bound):
     """
+    TODO: Fragile. Needs to be rewritten
+
     Returns the P-site offset in a metagene vector
     xvec: A vector of indices (coordinates)
     yvec: Metagene vector
@@ -1177,6 +1234,8 @@ def read_genes_from_file(filename):
     try:
         fh = open(filename, "r")
     except:
+        # TODO: just issue a warning and move on ...
+        # don't crash here
         raise FileNotFoundError
 
     genes = []
@@ -1408,6 +1467,14 @@ def script_init():
     # For a gene, get read coverage from 5' or 3' end
     if "readcov_from_terminal" not in global_config:
         global_config["readcov_from_terminal"] = "five_prime"
+
+    # Path to file containing a list of genes which are part of
+    # operons, but are not the first member.
+    # The user supplies this override. If nothing is specified,
+    # infer_operon_status() will try to identify operons from
+    # the annotation data
+    if "operon_members_list" not in global_config:
+        global_config["operon_members_list"] = ""
 
     # Calculate coverage for N% of gene length
     if "readcov_percentage_length" not in global_config:
@@ -2377,6 +2444,9 @@ def detect_overlaps():
         upstream_gene_strand = gene_upstream[1]["strand"]
         downstream_gene_strand = gene_downstream[1]["strand"]
 
+        # TODO: BUG:  We are not considering the reference chromosome
+        # here. This may become important for yeast and subsequently higher
+        # eukaryotes
         if (start_gene_downstream < stop_gene_upstream) and (
             upstream_gene_strand == downstream_gene_strand
         ):
@@ -3869,7 +3939,7 @@ def load_svg(imgpath):
     in the HTML report
     """
     img = open(imgpath, "rb")
-    v = base64.b64encode(img.read()).decode('utf-8')
+    v = base64.b64encode(img.read()).decode("utf-8")
     img.close()
     return v
 
@@ -3941,7 +4011,6 @@ def main():
 
     print("\n")
     script_init()
-
     check_gene_list()
 
     notify("Checking terminal base fractions")
