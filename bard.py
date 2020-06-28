@@ -65,7 +65,7 @@ np.random.seed(12345)
 
 # This line is automatically updated before each commit
 # Do not edit
-versionstr = "bard v1.0 ID=22-10-46-27-06-2020"
+versionstr = "bard v1.0 ID=15-33-27-28-06-2020"
 
 codon_to_aa = {
     "ATA": "I",
@@ -4030,11 +4030,11 @@ class configuration_panel:
         self.overlapvar = BooleanVar(self.w, True)
 
         # Peak scan range
-        self.psr_lower_file_entry_text = IntVar(self.w, -5)
+        self.psr_lower_file_entry_text = IntVar(self.w, -20)
         self.psr_lower_file = Entry(self.w, textvariable=self.psr_lower_file_entry_text)
         self.psr_lower_file.grid(row=8, column=1, padx=10, pady=10)
 
-        self.psr_upper_file_entry_text = IntVar(self.w, -20)
+        self.psr_upper_file_entry_text = IntVar(self.w, -5)
         self.psr_upper_file = Entry(self.w, textvariable=self.psr_upper_file_entry_text)
         self.psr_upper_file.grid(row=8, column=2, padx=10, pady=10)
 
