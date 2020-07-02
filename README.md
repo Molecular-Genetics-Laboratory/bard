@@ -1,5 +1,5 @@
 #  bard
-**bard** is a command-line tool for visualization and reporting on ribosome profiling datasets. The curent version is compatible with prokaryotes and yeast.
+**bard** is a tool for visualization and reporting on ribosome profiling datasets. The curent version is compatible with prokaryotes and yeast.
 
 ## Requirements
 * Python 3.x (>= 3.7)
@@ -38,7 +38,7 @@ You can install the required libraries via `pip` using the `requirements.txt` fi
 
 ### Usage
 
-`bard` does not work with the raw read sequence (FASTQ) files directly. They need to be preprocessed (removing rRNAs, adapters etc) and mapped to a reference genome first, using either `bowtie2 / tophat` or some similar tool of your choice. You'll also need the corresponding annotation file and a multiple fasta file containing all the CDS sequences. The gene names in the GTF/GFF (annotation) file need to exactly match those in the fasta file. If you are working on yeast, the chromome IDs in your reference genome (fasta) should match with those in the GTF (first column).
+`bard` does not work with the raw read sequence (FASTQ) files directly. They need to be preprocessed (removing rRNAs, adapters, etc) and mapped to a reference genome first, using either `bowtie2 / tophat` or some similar tool of your choice. You'll also need the corresponding annotation file and a multiple fasta file containing all the CDS sequences. The gene names in the GTF/GFF (annotation) file need to exactly match those in the fasta file. If you are working on yeast, the chromome IDs in your reference genome (fasta) should match with those in the GTF (first column).
 
 It is preferable to download these organism specific files from the same source, such as `Ensembl`.
 
@@ -151,40 +151,41 @@ Run the script the same way as mentioned above. The results will be written to a
 The JSON files under `Data/` can be loaded into a Python or R (using `jsonlite`, for instance) environment for further analysis.
 
 ### Resulting output
-The files under `Plots/` provide a summary of the translation process being investigated, briefly described as follows:
+A summary of the translation process being investigated gets written out as an [HTML report.](../blob/master/examples/report.html). Some relevant plots are described below:
 
 #### Basic diagnostics
 Plots showing the overall quality of the riboseq dataset. Here, the top left plot shows the global reading frame, where ~80% of the reads (p-sites) map to `frame 1`. At the top right, we see that the proportion of reads is greater near the `5'` end of the genes than the `3'` end. Bottom left panel shows the distribution of read lengths in our dataset, while the bottom right panel describes the fraction of bases at the `5'` and `3'` terminals of the reads.
 
-<img src=/images/reading_frame.png width=350 height=250><img src=/images/asymmetry.png width=350 height=250>
+<img src=/examples/reading_frame.png width=350 height=250><img src=/examples/asymmetry.png width=350 height=250>
 
-<img src=/images/read_dist.png width=350 height=250><img src=/images/basefrac.png width=350 height=250>
+<img src=/examples/read_dist.png width=350 height=250><img src=/examples/basefrac.png width=350 height=250>
 
 #### P-site offsets
 Metagene plots showing normalized ribosome densities for a particular read length (`K-mer`). The well-defined peaks reflect the `3'` boundary of initiating ribosomes as they wait with their p-sites positioned on the start codon (position 0). This allows us to obtain the distance of the ribosome's p-site from the `3'` extrimity of a read, which, as we see here, is a constant `15 nt` for all read lengths.
 
 
-<img src=/images/meta_rpf.png width=700 height=500>
+<img src=/examples/meta_rpf.png width=700 height=500>
 
 #### Initiation
 Having the p-site offsets allows us to obtain the metagene profile of all initiation events, averaged across the translatome. We can observe a characteristic three-nucleotide periodicity pattern as the ribosomes wait to accept the cognate tRNA at each codon. Also, since initiation is a rate limiting step in the translation process, the ribosomes spend more time at the start codon on average. This is reflected by the sharp signal at position 0:
 
-<img src=/images/initiation_peak.png width=700 height=200>
+<img src=/examples/initiation_peak.png width=700 height=200>
 <br></br>
 
 We see how the reading frame is being maintained by the translating ribosomes, with a majority of time being spent on frame 1 (red):
 
-<img src=/images/start_framing.png width=700 height=200>
+<img src=/examples/start_framing.png width=700 height=200>
 
 #### Pause events
-Heatmap reflecting the amount of time a ribosome takes to translate the codon of a particular amino acid. For example, here we see that the ribosomes spend a longer time with histidine codons in their A-sites. The situation is reversed for arginine or phenylalanine codons.
+Heatmap reflecting the amount of time a ribosome takes to translate the codon of a particular amino acid. For example, here we see that the ribosomes spend a longer time with histidine codons in their A-sites. The situation is reversed for asparagine or phenylalanine codons.
 
-<img src=/images/aa_pause_hmap.png width=700 height=250>
+
+<img src=/examples/aa_pause_hmap.png width=700 height=250>
 
 <br></br>
 We can also break down the above heatmap on a per-codon basis, which shows that both the histidine codons CAT and CAC contribute significantly to the A-site pause. However, only the cognate CAT codon induces a similar pause at the P-site.
 
-<img src=/images/codon_pause_hmap.png width=700 height=250>
+<img src=/examples/codon_pause_hmap.png width=700 height=250>
 
 <br></br>
 
