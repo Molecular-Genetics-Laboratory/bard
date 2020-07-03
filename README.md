@@ -48,7 +48,7 @@ So, you need to have the following files ready:
 * A multi-fasta file containing the CDS sequences for each gene
 
 #### First run
-`bard` does not have any command-line options; using only a single configuration file instead. To create a configuration file, run the script without any arguments:
+`bard` does not have any command-line options (except one, see below); using only a single configuration file instead. To create a configuration file, run the script without any arguments:
 
 ```shell
 ~$ python bard.py
@@ -81,6 +81,17 @@ Once you have edited the configuration file to your requirements, your can run `
 ```shell
 # coffee?
 ~$ python bard.py config.json
+```
+
+#### Using the graphical interface
+If you are not so keen on editing configuration files by hand, `bard` has a rudimentary but functional GUI you can use. Start it like so:
+```shell
+~$ python bard.py --gui
+```
+Do note that you need to have `Tkinter` installed and accessible for the GUI to work. The package comes pre-installed with the `Anaconda` distribution of Python, so you should probably be using that. Otherwise, on `Linux (Debian/Ubuntu)`, you should run this first:
+```shell
+~$ sudo apt-get update
+~$ sudo apt-get install python3-tk
 ```
 
 ### Example usage
@@ -148,10 +159,11 @@ Run the script the same way as mentioned above. The results will be written to a
 ```
 `<id>` will be unique each time you run `bard`. This makes it possible to run multiple instances in parallel (see below) without the risk of overwriting existing files.
 
+### Resulting output
+A summary of the translation process being investigated is written out as an HTML report.
 The JSON files under `Data/` can be loaded into a Python or R (using `jsonlite`, for instance) environment for further analysis.
 
-### Resulting output
-A summary of the translation process being investigated gets written out as an [HTML report.](../blob/master/examples/report.html). Some relevant plots are described below:
+Some relevant images under `Plots/ ` are described below:
 
 #### Basic diagnostics
 Plots showing the overall quality of the riboseq dataset. Here, the top left plot shows the global reading frame, where ~80% of the reads (p-sites) map to `frame 1`. At the top right, we see that the proportion of reads is greater near the `5'` end of the genes than the `3'` end. Bottom left panel shows the distribution of read lengths in our dataset, while the bottom right panel describes the fraction of bases at the `5'` and `3'` terminals of the reads.
