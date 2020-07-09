@@ -42,7 +42,7 @@ You can install the required libraries via `pip` using the `requirements.txt` fi
 
 It is preferable to download these organism specific files from the same source, such as `Ensembl`.
 
-So, you need to have the following files ready:
+**TL;DR**:  You need to have the following files ready:
 * An annotation file (either GTF/GFFv3)
 * An alignment file in BAM format (indexed and unmapped reads removed)
 * A multi-fasta file containing the CDS sequences for each gene
@@ -64,6 +64,7 @@ The configuration file looks something like this:
     "coding_sequence_format": "fasta",
     "annotation_file_path": "/home/user/path/to/annotation.gff",
     "annotation_feature_tag": "ID",
+    "annotation_feature_type": "gene",
     "bam_file_path": "/home/user/path/to/alignment.bam",
     "check_offset_from": "five_prime",
     "coverage_cutoff": 10,
@@ -73,7 +74,8 @@ The configuration file looks something like this:
     "use_readlengths": [26,27,28,29,30,31,32,33],
     "gene_list_file": "/home/user/path/to/gene_list.txt",
     "gene_list_action": "include_only",
-    "genes_overlap_exception": "/home/user/path/to/overlapping_genes_list.txt"
+    "genes_overlap_exception": "/home/user/path/to/overlapping_genes_list.txt",
+    "operon_members_list": "/home/user/path/to/operon_members_list.txt"
 }
 ```
 Once you have edited the configuration file to your requirements, your can run `bard` like so:
@@ -88,7 +90,7 @@ If you are not so keen on editing configuration files by hand, `bard` has a rudi
 ```shell
 ~$ python bard.py --gui
 ```
-Do note that you need to have `Tkinter` installed and accessible for the GUI to work. The package comes pre-installed with the `Anaconda` distribution of Python, so you should probably be using that. Otherwise, on `Linux (Debian/Ubuntu)`, you should run this first:
+Do note that you need to have `Tkinter` installed and accessible for the GUI to work. The package comes pre-installed with the `Anaconda` distribution of Python, so you should probably be using that. Otherwise, on Linux (Debian/Mint/Ubuntu), you should run this first:
 ```shell
 ~$ sudo apt-get update
 ~$ sudo apt-get install python3-tk
@@ -105,6 +107,7 @@ We'd use the following configuration:
     "coding_sequence_format": "fasta",
     "annotation_file_path": "/home/user/Desktop/Yeast_S288C_annotation.gff",
     "annotation_feature_tag": "protein_id",
+    "annotation_feature_type": "CDS",
     "bam_file_path": "/home/user/Desktop/aligned_reads.bam",
     "check_offset_from": "three_prime",
     "coverage_cutoff": 40,
@@ -114,7 +117,8 @@ We'd use the following configuration:
     "use_readlengths": [26, 27, 28, 29],
     "gene_list_file": "",
     "gene_list_action": "",
-    "genes_overlap_exception": ""
+    "genes_overlap_exception": "",
+    "operon_members_list": ""
 }
 ```
 Briefly, the options are:
@@ -123,7 +127,8 @@ Option | Description
 -------|------------
 `bam_file_path`| Absolute path to the read alignment (BAM) file
 `coding_sequence_path`| Absolute path to the multiple fasta file containing CDS sequences for each gene
- `annotation_feature_tag`|  This tag in the `9th` GTF attribute column specifies the gene names (`protein_id`)
+`annotation_feature_tag`|  This tag in the `9th` GTF attribute column specifies the gene names (`protein_id`)
+`annotation_feature_type`|  Can be `gene`, `CDS`, `exon`, etc depending on the annotation file and your requirements
 `check_offset_from`| Determine E/P/A-site offsets from the `3'` ends of the ribosome protected fragments (reads)
 `coverage_cutoff`| Ignore all genes with a read coverage below this numerical threshold (`40`)
 `coverage_metric`| Calculate the read coverage as average number of reads mapping per nucleotide (`reads_per_nt`)
@@ -133,6 +138,7 @@ Option | Description
 `gene_list_file`| Absolute path to text file with a list of genes (`none specified`)
 `gene_list_action`| What to do with the  provided gene list (`no action specified`)
 `genes_overlap_exception`| Include these overlapping genes in the analysis (`none specified`)
+`operon_members_list`| List of genes which are part of operons (will be ignored when checking for leaderless transcripts) (`none specified`)
 
 
 Run the script the same way as mentioned above. The results will be written to a separate folder in your working directory with the following structure:

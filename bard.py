@@ -65,7 +65,7 @@ np.random.seed(12345)
 
 # This line is automatically updated before each commit
 # Do not edit
-versionstr = "bard v1.0 ID=15-33-27-28-06-2020"
+versionstr = "bard v1.0 ID=16-27-10-09-07-2020"
 
 codon_to_aa = {
     "ATA": "I",
@@ -452,9 +452,11 @@ overlap_dict = {}
 gene_coverages = {}
 # Genes with coverage above threshold
 high_coverage_genes = []
-# Genes which are, and are not, part of operons
+# Type of UTR for each gene
+gene_utr_status = {}
+# Genes which are part of operons
 # Primarily for leaderless transcript detection
-operon_status = {"operon_members": [], "not_operon_members": []}
+operon_genes = []
 # Gene name --> distance (nt) to nearest
 # upstream gene on the same strand
 genes_upstream_distance = {}
@@ -632,6 +634,7 @@ CONFIG_TMP = """{
     "coding_sequence_format": "fasta",
     "annotation_file_path": "/home/user/path/to/annotation.gff",
     "annotation_feature_tag": "ID",
+    "annotation_feature_type": "gene",
     "bam_file_path": "/home/user/path/to/alignment.bam",
     "check_offset_from": "five_prime",
     "coverage_cutoff": 40,
@@ -641,7 +644,8 @@ CONFIG_TMP = """{
     "use_readlengths": [26,27,28,29,30,31,32,33],
     "gene_list_file": "/home/user/path/to/gene_list.txt",
     "gene_list_action": "",
-    "genes_overlap_exception": "/home/user/path/to/overlapping_genes_list.txt"
+    "genes_overlap_exception": "/home/user/path/to/overlapping_genes_list.txt",
+    "operon_members_list": "/home/user/path/to/operon_members_list.txt"
 }
 """
 # Associated help text.
@@ -686,29 +690,32 @@ The available options and possible values are elaborated below. The mandatory on
 marked with a star(*):
 
 
---------------------------------------+--------------------------------------------------
+--------------------------------------+---------------------------------------------------
             OPTIONS                   |                     VALUES
---------------------------------------+--------------------------------------------------
+--------------------------------------+---------------------------------------------------
 *1. coding_sequence_path:             |  Absolute path to the CDS / cDNA file, containing
                                       |  the sequences for all genes. Make sure that the
                                       |  fasta headers exactly match the names in the GFF
---------------------------------------+--------------------------------------------------
+--------------------------------------+---------------------------------------------------
 *2. coding_sequence_format:           |  The format of the CDS/cDNA file. eg: "fasta"
---------------------------------------+--------------------------------------------------
+--------------------------------------+---------------------------------------------------
 *3. annotation_file_path:             |  Absolute path to the annotation file (GTF/GFF)
---------------------------------------+--------------------------------------------------
+--------------------------------------+---------------------------------------------------
 *4. annotation_feature_tag:           |  The tag in column 9 of the GFF/GTF file which
-                                      |  uniquely identifies the feature (gene).
+                                      |  uniquely identifies the gene:
                                       |  (eg: "gene_id" or "ID" or "protein_id")
---------------------------------------+--------------------------------------------------
-*5. bam_file_path:                    |  Absolute path to the alignment file (BAM)
---------------------------------------+--------------------------------------------------
-*6. check_offset_from:                |  Calculate the P/E/A site offsets for either
+--------------------------------------+---------------------------------------------------
+*5. annotation_feature_type:          |  Value in column 2 of the GFF/GTF file denoting
+                                      |  the feature type: (eg: "gene" or "exon" or "CDS")
+--------------------------------------+---------------------------------------------------
+*6. bam_file_path:                    |  Absolute path to the alignment file (BAM)
+--------------------------------------+---------------------------------------------------
+*7. check_offset_from:                |  Calculate the P/E/A site offsets for either
                                       |  "five_prime" or "three_prime" ends of the reads
---------------------------------------+--------------------------------------------------
-*7. will_ignore_overlaps:             |  Ignore overlapping genes? true or false(boolean)
---------------------------------------+--------------------------------------------------
-*8. peak_scan_range:                  |  Scan for the initiation peak within this range
+--------------------------------------+---------------------------------------------------
+*8. will_ignore_overlaps:             |  Ignore overlapping genes? true or false(boolean)
+--------------------------------------+---------------------------------------------------
+*9. peak_scan_range:                  |  Scan for the initiation peak within this range
                                       |  of nucleotides w.r.t the start codon.
                                       |  For example, [-25, -5] checks for the initiation
                                       |  peak -25 to -5 nt upstream of the start codon,
@@ -716,18 +723,18 @@ marked with a star(*):
                                       |  using 3' offsets, you may want to use something
                                       |  like: [5, 30]. You'll need to figure out the
                                       |  exact values empirically.
---------------------------------------+--------------------------------------------------
-9. use_readlengths:                   |  Ribosome protected fragment (RPF/read) lengths
+--------------------------------------+---------------------------------------------------
+10. use_readlengths:                  |  Ribosome protected fragment (RPF/read) lengths
                                       |  to use in the analysis. By default, it looks at
                                       |  all read lengths from 20 to 40nt, and then uses
                                       |  some heuristics to figure out which ones to use.
---------------------------------------+--------------------------------------------------
-10. gene_list_file:                   |  Absolute path to a file containing a list of
+--------------------------------------+---------------------------------------------------
+11. gene_list_file:                   |  Absolute path to a file containing a list of
                                       |  gene names, one per line. The names must match
                                       |  with those in the GFF and the CDS/cDNA multiple
                                       |  fasta file.
---------------------------------------+--------------------------------------------------
-11. gene_list_action:                 |  Specifies what to do with the list of genes.
+--------------------------------------+---------------------------------------------------
+12. gene_list_action:                 |  Specifies what to do with the list of genes.
                                       | -------------------
                                       |
                                       |  1."include_only":    Run the analysis only for
@@ -742,19 +749,23 @@ marked with a star(*):
                                       |                       remaining, use an equal
                                       |                       number of randomly selected
                                       |                       genes.
---------------------------------------+--------------------------------------------------
-12. genes_overlap_exception:          |  Absolute path to a file containing a list of
+--------------------------------------+---------------------------------------------------
+13. genes_overlap_exception:          |  Absolute path to a file containing a list of
                                       |  gene names (all of which overlap with some other)
                                       |  which will NOT be ignored during the analysis.
                                       |  One gene name per line.
---------------------------------------+--------------------------------------------------
-13. coverage_cutoff:                  |  Exclude any gene which has a coverage value
+--------------------------------------+---------------------------------------------------
+14. coverage_cutoff:                  |  Exclude any gene which has a coverage value
                                       |  below this numerical threshold. Defaults to 10.
---------------------------------------+--------------------------------------------------
-14. coverage_metric:                  |  Specifies how the coverage value is calculated.
+--------------------------------------+---------------------------------------------------
+15. coverage_metric:                  |  Specifies how the coverage value is calculated.
                                       |  Can be either "reads_per_nt" (on average) or
                                       |  "rpkm". Defaults to RPKM.
---------------------------------------+--------------------------------------------------
+--------------------------------------+---------------------------------------------------
+16. operon_members_list:              |  Path to a text file containing a list of gene
+                                      |  names (one per line), which are part of
+                                      |  operons, but are not the first member.
+--------------------------------------+---------------------------------------------------
 """
 
 unique = lambda v: list(set(v))
@@ -790,9 +801,6 @@ def running_sum_argmin(v):
     """
     Get the argument of minima of the running
     sum vector of a read coverage profile.
-
-    This is the changepoint detection function
-    used to identify leaderless transcripts.
     """
     avg = np.mean(v)
     rsvec = []
@@ -807,7 +815,7 @@ def running_sum_argmin(v):
     return np.where(rsvec == min(rsvec))[0]
 
 
-def infer_operon_status():
+def update_operon_status():
     """
     Detect genes which are not members of operons.
     Used for the detection of leaderless transcripts.
@@ -821,18 +829,29 @@ def infer_operon_status():
     without an annotated gene on the same strand within
     0 to -100nt of the annotated start position.
     """
-
+    notify("Checking for operon member genes")
     if global_config["operon_members_list"] != "":
         # use the user supplied list
-        operon_members = read_genes_from_file(global_config["operon_members_list"])
-        for gene, details in annotation.items():
-            if gene not in operon_members:
-                operon_status["not_operon_members"].append(gene)
-            else:
-                operon_status["operon_members"].append(gene)
-        return
+        try:
+            operon_members = read_genes_from_file(global_config["operon_members_list"])
+            notify(
+                " .... found {} genes as members of operons".format(len(operon_members))
+            )
+            for gene, details in annotation.items():
+                # update list
+                if gene in operon_members:
+                    operon_genes.append(gene)
+        except:
+            notify(
+                "Could not read operon file, inferring operons instead", level="warn"
+            )
+    else:
+        notify("Operon members list not provided, trying to infer membership")
+        notify("Operon inference not implemented, ignoring for now", level="warn")
 
     # We infer if operon members not supplied
+    # TODO: add operon inference code
+    return
 
 
 def extended_sort(x, by, reverse=False):
@@ -1313,16 +1332,29 @@ def parse_gff():
 
         if not found_tag:
             # No point continuing
-            notify("{}th gene lacks feature tag".format(i), level="crit", fatal=True)
+            notify(
+                "Malformed feature tag on {}th gene".format(i), level="crit", fatal=True
+            )
 
     # Populate the annotation dictionary
     for i in range(len(annolist)):
+        if annolist[i][2] != global_config["annotation_feature_type"]:
+            continue
         annotation[extract_gene_name(i)] = {
             "start": int(annolist[i][3]),
             "stop": int(annolist[i][4]),
             "strand": annolist[i][6],
             "refname": annolist[i][0],
         }
+
+    if len(annotation) == 0:
+        notify(
+            "Feature type '{}' does not exist".format(
+                global_config["annotation_feature_type"]
+            ),
+            level="crit",
+        )
+        notify("Please verify the GFF/GTF file (2nd column)", level="crit", fatal=True)
 
     save_file(annotation, "annotation", verbose=global_config["filename_verbosity"])
 
@@ -1481,7 +1513,7 @@ def script_init():
     # Path to file containing a list of genes which are part of
     # operons, but are not the first member.
     # The user supplies this override. If nothing is specified,
-    # infer_operon_status() will try to identify operons from
+    # update_operon_status() will try to identify operons from
     # the annotation data
     if "operon_members_list" not in global_config:
         global_config["operon_members_list"] = ""
@@ -1544,6 +1576,7 @@ def script_init():
 
     parse_gff()
     detect_overlaps()
+    update_operon_status()
 
 
 def check_gene_list():
@@ -1580,7 +1613,7 @@ def check_gene_list():
     try:
         genelist = read_genes_from_file(listfile)
     except:
-        notify("No gene list provided, moving on", level="warn")
+        notify("No arbitrary gene list provided, moving on", level="warn")
         return
 
     if listaction not in actions:
@@ -1648,9 +1681,9 @@ def save_file(data, filename, verbose=False):
         )
 
 
-def generate_coverage_profiles(include_genes=[], disabled=False):
+def generate_coverage_profiles(include_genes=[], nt_buffer=100, disabled=False):
     """
-    Extract the read coverage profile for all genes
+    Extract read coverage profiles for leaderless transcript detection
     """
     if disabled:
         notify("Coverage profile is disabled", level="warn")
@@ -1662,20 +1695,31 @@ def generate_coverage_profiles(include_genes=[], disabled=False):
             if gene not in include_genes:
                 continue
 
+        if details["start"] - nt_buffer < 0:
+            continue
+
+        if details["strand"] == "+":
+            start = details["start"] - nt_buffer
+            stop = details["start"] + nt_buffer + 1
+
+        if details["strand"] == "-":
+            # will be reversed
+            start = details["stop"] - nt_buffer
+            stop = details["stop"] + nt_buffer + 1
+
         coverage_profile[gene] = get_coverage(
-            start=details["start"],
-            stop=details["stop"],
+            start=start,
+            stop=stop,
             reference=details["refname"],
             strand=details["strand"],
             mode="profile",
-        ).copy()
+        )["coverage"]
 
-    # dump the coverage information
-    save_file(
-        coverage_profile,
-        "read_coverage_profile",
-        verbose=global_config["filename_verbosity"],
-    )
+    # save_file(
+    #     coverage_profile,
+    #     "read_coverage_profile",
+    #     verbose=global_config["filename_verbosity"],
+    # )
 
 
 def get_coverage(start, stop, reference, strand, mode="mean"):
@@ -1714,7 +1758,10 @@ def get_coverage(start, stop, reference, strand, mode="mean"):
         return mean_cov
 
     if mode == "profile":
-        cv = np.sum(cv, axis=0)
+        if strand == "+":
+            cv = np.sum(cv, axis=0)
+        if strand == "-":
+            cv = np.sum(cv, axis=0)[::-1]
         return {"coverage": cv.tolist(), "position": np.arange(start, stop, 1).tolist()}
 
 
@@ -3796,6 +3843,39 @@ def consistency_score_per_transcript():
     plt.close()
 
 
+def detect_leaderless_transcripts(disabled=False):
+    """
+    Classify genes by the relative location of
+    their translation start sites w.r.t to the
+    annotated start codon:
+        1. TSS upstream of start codon
+        2. TSS downstream of start codon
+        3. TSS at the start codon
+    """
+    if disabled:
+        notify("Leaderless transcript detection is turned off", level="warn")
+        return
+
+    # get the read coverage profile within +/-100nt of the annotated
+    # start codon
+    generate_coverage_profiles(disabled=False, nt_buffer=100)
+
+    for gene, profile in coverage_profile.items():
+
+        utr_status = {}
+
+        if max(profile) < 40:
+            # < 40 reads aligned per nt
+            # too few to make a decision
+            continue
+
+        minima = running_sum_argmin(profile)
+
+        if len(minima) > 1:
+            # bail
+            continue
+
+
 def generate_metagene_vector():
     """
     Computes the metagene by first normalizing and then taking a
@@ -3993,69 +4073,83 @@ class configuration_panel:
     """
 
     def __init__(self, resizable):
-        self.w = Tk()
+        self.window = Tk()
         self.resizable = resizable
         # annotation
         self.anno_file_entry_text = StringVar()
-        self.anno_file = Entry(self.w, textvariable=self.anno_file_entry_text)
+        self.anno_file = Entry(self.window, textvariable=self.anno_file_entry_text)
         self.anno_file.grid(row=0, column=1, padx=10, pady=10)
 
         # annotation feature tag
-        self.tag_file_entry_text = StringVar(self.w, "ID")
-        self.tag_file = Entry(self.w, textvariable=self.tag_file_entry_text)
+        self.tag_file_entry_text = StringVar(self.window, "ID")
+        self.tag_file = Entry(self.window, textvariable=self.tag_file_entry_text)
         self.tag_file.grid(row=1, column=1, padx=10, pady=10)
+
+        # annotation feature type
+        self.type_file_entry_text = StringVar(self.window, "gene")
+        self.type_file = Entry(self.window, textvariable=self.type_file_entry_text)
+        self.type_file.grid(row=2, column=1, padx=10, pady=10)
 
         # CDS
         self.cds_file_entry_text = StringVar()
-        self.cds_file = Entry(self.w, textvariable=self.cds_file_entry_text)
-        self.cds_file.grid(row=2, column=1, padx=10, pady=10)
+        self.cds_file = Entry(self.window, textvariable=self.cds_file_entry_text)
+        self.cds_file.grid(row=3, column=1, padx=10, pady=10)
 
         # BAM
         self.bam_file_entry_text = StringVar()
-        self.bam_file = Entry(self.w, textvariable=self.bam_file_entry_text)
-        self.bam_file.grid(row=3, column=1, padx=10, pady=10)
+        self.bam_file = Entry(self.window, textvariable=self.bam_file_entry_text)
+        self.bam_file.grid(row=4, column=1, padx=10, pady=10)
 
         # Offset terminal
-        self.offsetvar = StringVar(self.w, "five_prime")
+        self.offsetvar = StringVar(self.window, "five_prime")
 
         # read coveragr cutoff
-        self.rcov_file_entry_text = DoubleVar(self.w, 10)
-        self.rcov_file = Entry(self.w, textvariable=self.rcov_file_entry_text)
-        self.rcov_file.grid(row=5, column=1, padx=10, pady=10)
+        self.rcov_file_entry_text = DoubleVar(self.window, 10)
+        self.rcov_file = Entry(self.window, textvariable=self.rcov_file_entry_text)
+        self.rcov_file.grid(row=6, column=1, padx=10, pady=10)
 
         # read coverage metric
-        self.metricvar = StringVar(self.w, "rpkm")
+        self.metricvar = StringVar(self.window, "rpkm")
 
         # Ignore overlaps
-        self.overlapvar = BooleanVar(self.w, True)
+        self.overlapvar = BooleanVar(self.window, True)
 
         # Peak scan range
-        self.psr_lower_file_entry_text = IntVar(self.w, -20)
-        self.psr_lower_file = Entry(self.w, textvariable=self.psr_lower_file_entry_text)
-        self.psr_lower_file.grid(row=8, column=1, padx=10, pady=10)
+        self.psr_lower_file_entry_text = IntVar(self.window, -20)
+        self.psr_lower_file = Entry(
+            self.window, textvariable=self.psr_lower_file_entry_text
+        )
+        self.psr_lower_file.grid(row=9, column=1, padx=10, pady=10)
 
-        self.psr_upper_file_entry_text = IntVar(self.w, -5)
-        self.psr_upper_file = Entry(self.w, textvariable=self.psr_upper_file_entry_text)
-        self.psr_upper_file.grid(row=8, column=2, padx=10, pady=10)
+        self.psr_upper_file_entry_text = IntVar(self.window, -5)
+        self.psr_upper_file = Entry(
+            self.window, textvariable=self.psr_upper_file_entry_text
+        )
+        self.psr_upper_file.grid(row=9, column=2, padx=10, pady=10)
 
         # Readlengths
-        self.rdl_file_entry_text = StringVar(self.w, "26,27,28,29,30,31,32")
-        self.rdl_file = Entry(self.w, textvariable=self.rdl_file_entry_text)
-        self.rdl_file.grid(row=9, column=1, padx=10, pady=10)
+        self.rdl_file_entry_text = StringVar(self.window, "26,27,28,29,30,31,32")
+        self.rdl_file = Entry(self.window, textvariable=self.rdl_file_entry_text)
+        self.rdl_file.grid(row=10, column=1, padx=10, pady=10)
 
         # Gene list file
         self.glf_file_entry_text = StringVar()
-        self.glf_file = Entry(self.w, textvariable=self.glf_file_entry_text)
-        self.glf_file.grid(row=10, column=1, padx=10, pady=10)
+        self.glf_file = Entry(self.window, textvariable=self.glf_file_entry_text)
+        self.glf_file.grid(row=11, column=1, padx=10, pady=10)
 
         # Gene list action
-        self.glavar = StringVar(self.w)
+        self.glavar = StringVar(self.window)
         # self.glavar.set("include_only") # default value
 
         # Genes overlap exception
         self.gex_file_entry_text = StringVar()
-        self.gex_file = Entry(self.w, textvariable=self.gex_file_entry_text)
-        self.gex_file.grid(row=12, column=1, padx=10, pady=10)
+        self.gex_file = Entry(self.window, textvariable=self.gex_file_entry_text)
+        self.gex_file.grid(row=13, column=1, padx=10, pady=10)
+
+        # Operon member genes
+        self.operon_file_entry_text = StringVar()
+        self.operon_file = Entry(self.window, textvariable=self.operon_file_entry_text)
+        self.operon_file.grid(row=14, column=1, padx=10, pady=10)
 
     def file_dialog(self, entry_object, ftype):
         if ftype == "gtf":
@@ -4080,7 +4174,6 @@ class configuration_panel:
         entry_object.set(path)
 
     def update_global_conf(self, window):
-
         global_config["coding_sequence_path"] = self.cds_file.get()
         global_config["coding_sequence_format"] = "fasta"
         global_config["annotation_file_path"] = self.anno_file.get()
@@ -4100,27 +4193,29 @@ class configuration_panel:
         global_config["gene_list_file"] = self.glf_file.get()
         global_config["gene_list_action"] = self.glavar.get()  # check
         global_config["genes_overlap_exception"] = self.gex_file.get()
+        global_config["operon_members_list"] = self.operon_file.get()
+        global_config["annotation_feature_type"] = self.type_file.get()
         window.destroy()
 
     def start(self):
         # Setups
-        self.w.title("bard - Configuration Panel")
-        self.w.geometry("600x600")
-        self.w.configure(background="#EDDFCD")
+        self.window.title("bard - Configuration Panel")
+        self.window.geometry("600x690")
+        self.window.configure(background="#EDDFCD")
 
         if not self.resizable:
-            self.w.resizable(False, False)
+            self.window.resizable(False, False)
 
         # Annotation file
         Label(
-            self.w,
+            self.window,
             text="Annotation file (*)",
             justify=LEFT,
             anchor="w",
             background="#EDDFCD",
         ).grid(sticky=W, row=0, column=0, padx=24, pady=10)
         ttk.Button(
-            self.w,
+            self.window,
             text="Select file",
             width=20,
             command=lambda: self.file_dialog(
@@ -4130,208 +4225,241 @@ class configuration_panel:
 
         # Annotation feature tag
         Label(
-            self.w,
+            self.window,
             text="Annotation feature tag (*)",
             justify=LEFT,
             anchor="w",
             background="#EDDFCD",
         ).grid(sticky=W, row=1, column=0, padx=24, pady=10)
 
+        # Annotation feature type
+        Label(
+            self.window,
+            text="Annotation feature type (*)",
+            justify=LEFT,
+            anchor="w",
+            background="#EDDFCD",
+        ).grid(sticky=W, row=2, column=0, padx=24, pady=10)
+
         # CDS file
         Label(
-            self.w, text="CDS file (*)", justify=LEFT, anchor="w", background="#EDDFCD"
-        ).grid(sticky=W, row=2, column=0, padx=24, pady=10)
-        ttk.Button(
-            self.w,
-            text="Select file",
-            width=20,
-            command=lambda: self.file_dialog(
-                entry_object=self.cds_file_entry_text, ftype="fasta"
-            ),
-        ).grid(row=2, column=2, padx=10, pady=10)
-
-        # BAM file
-        Label(
-            self.w,
-            text="Alignment file (*)",
+            self.window,
+            text="CDS file (*)",
             justify=LEFT,
             anchor="w",
             background="#EDDFCD",
         ).grid(sticky=W, row=3, column=0, padx=24, pady=10)
         ttk.Button(
-            self.w,
+            self.window,
+            text="Select file",
+            width=20,
+            command=lambda: self.file_dialog(
+                entry_object=self.cds_file_entry_text, ftype="fasta"
+            ),
+        ).grid(row=3, column=2, padx=10, pady=10)
+
+        # BAM file
+        Label(
+            self.window,
+            text="Alignment file (*)",
+            justify=LEFT,
+            anchor="w",
+            background="#EDDFCD",
+        ).grid(sticky=W, row=4, column=0, padx=24, pady=10)
+        ttk.Button(
+            self.window,
             text="Select file",
             width=20,
             command=lambda: self.file_dialog(
                 entry_object=self.bam_file_entry_text, ftype="bam"
             ),
-        ).grid(row=3, column=2, padx=10, pady=10)
+        ).grid(row=4, column=2, padx=10, pady=10)
 
         # Offset check
         Label(
-            self.w,
+            self.window,
             text="Check P-site offset from",
             justify=LEFT,
             anchor="w",
             background="#EDDFCD",
-        ).grid(sticky=W, row=4, column=0, padx=24, pady=10)
+        ).grid(sticky=W, row=5, column=0, padx=24, pady=10)
         Radiobutton(
-            self.w,
+            self.window,
             text="5' end",
             variable=self.offsetvar,
             value="five_prime",
             justify=LEFT,
             anchor="w",
             background="#EDDFCD",
-        ).grid(sticky=W, row=4, column=1, padx=10, pady=10)
+        ).grid(sticky=W, row=5, column=1, padx=10, pady=10)
         Radiobutton(
-            self.w,
+            self.window,
             text="3' end",
             variable=self.offsetvar,
             value="three_prime",
             justify=LEFT,
             anchor="w",
             background="#EDDFCD",
-        ).grid(sticky=W, row=4, column=2, padx=10, pady=10)
+        ).grid(sticky=W, row=5, column=2, padx=10, pady=10)
 
         # Read coverage cutoff
         Label(
-            self.w,
+            self.window,
             text="Read coverage cutoff",
             justify=LEFT,
             anchor="w",
             background="#EDDFCD",
-        ).grid(sticky=W, row=5, column=0, padx=24, pady=10)
+        ).grid(sticky=W, row=6, column=0, padx=24, pady=10)
 
         # Read coverage metric
         Label(
-            self.w,
+            self.window,
             text="Read coverage metric",
             justify=LEFT,
             anchor="w",
             background="#EDDFCD",
-        ).grid(sticky=W, row=6, column=0, padx=24, pady=10)
+        ).grid(sticky=W, row=7, column=0, padx=24, pady=10)
         Radiobutton(
-            self.w,
+            self.window,
             text="Reads/nt (avg)",
             variable=self.metricvar,
             value="reads_per_nt",
             justify=LEFT,
             anchor="w",
             background="#EDDFCD",
-        ).grid(sticky=W, row=6, column=1, padx=10, pady=10)
+        ).grid(sticky=W, row=7, column=1, padx=10, pady=10)
         Radiobutton(
-            self.w,
+            self.window,
             text="RPKM",
             variable=self.metricvar,
             value="rpkm",
             justify=LEFT,
             anchor="w",
             background="#EDDFCD",
-        ).grid(sticky=W, row=6, column=2, padx=10, pady=10)
+        ).grid(sticky=W, row=7, column=2, padx=10, pady=10)
 
         # Read coverage metric
         Label(
-            self.w,
+            self.window,
             text="Ignore overlapping genes",
             justify=LEFT,
             anchor="w",
             background="#EDDFCD",
-        ).grid(sticky=W, row=7, column=0, padx=24, pady=10)
+        ).grid(sticky=W, row=8, column=0, padx=24, pady=10)
         Radiobutton(
-            self.w,
+            self.window,
             text="Yes",
             variable=self.overlapvar,
             value=True,
             justify=LEFT,
             anchor="w",
             background="#EDDFCD",
-        ).grid(sticky=W, row=7, column=1, padx=10, pady=10)
+        ).grid(sticky=W, row=8, column=1, padx=10, pady=10)
         Radiobutton(
-            self.w,
+            self.window,
             text="No",
             variable=self.overlapvar,
             value=False,
             justify=LEFT,
             anchor="w",
             background="#EDDFCD",
-        ).grid(sticky=W, row=7, column=2, padx=10, pady=10)
+        ).grid(sticky=W, row=8, column=2, padx=10, pady=10)
 
         # Peak scan range
         Label(
-            self.w,
+            self.window,
             text="Initiation scan window (nt)",
-            justify=LEFT,
-            anchor="w",
-            background="#EDDFCD",
-        ).grid(sticky=W, row=8, column=0, padx=24, pady=10)
-
-        # Readlengths
-        Label(
-            self.w,
-            text="Use readlengths (nt)",
             justify=LEFT,
             anchor="w",
             background="#EDDFCD",
         ).grid(sticky=W, row=9, column=0, padx=24, pady=10)
 
-        # Gene list file
+        # Readlengths
         Label(
-            self.w,
-            text="Arbitrary gene list",
+            self.window,
+            text="Use readlengths (nt)",
             justify=LEFT,
             anchor="w",
             background="#EDDFCD",
         ).grid(sticky=W, row=10, column=0, padx=24, pady=10)
+
+        # Gene list file
+        Label(
+            self.window,
+            text="Arbitrary gene list",
+            justify=LEFT,
+            anchor="w",
+            background="#EDDFCD",
+        ).grid(sticky=W, row=11, column=0, padx=24, pady=10)
         ttk.Button(
-            self.w,
+            self.window,
             text="Select file",
             width=20,
             command=lambda: self.file_dialog(
                 entry_object=self.glf_file_entry_text, ftype="txt"
             ),
-        ).grid(row=10, column=2, padx=10, pady=10)
+        ).grid(row=11, column=2, padx=10, pady=10)
 
         # Gene list action
         Label(
-            self.w,
+            self.window,
             text="Gene list action",
             justify=LEFT,
             anchor="w",
             background="#EDDFCD",
-        ).grid(sticky=W, row=11, column=0, padx=24, pady=10)
-        gla_menu = ttk.Combobox(self.w, textvariable=self.glavar)
+        ).grid(sticky=W, row=12, column=0, padx=24, pady=10)
+        gla_menu = ttk.Combobox(self.window, textvariable=self.glavar)
         gla_menu["values"] = ("include_only", "exclude_only", "exclude_balance")
-        gla_menu.grid(row=11, column=1, columnspan=2, padx=10, pady=10)
+        gla_menu.grid(row=12, column=1, columnspan=2, padx=10, pady=10)
 
         # Genes overlap exception
         Label(
-            self.w,
+            self.window,
             text="Genes overlap allowed",
             justify=LEFT,
             anchor="w",
             background="#EDDFCD",
-        ).grid(sticky=W, row=12, column=0, padx=24, pady=10)
+        ).grid(sticky=W, row=13, column=0, padx=24, pady=10)
         ttk.Button(
-            self.w,
+            self.window,
             text="Select file",
             width=20,
             command=lambda: self.file_dialog(
                 entry_object=self.gex_file_entry_text, ftype="txt"
             ),
-        ).grid(row=12, column=2, padx=10, pady=10)
+        ).grid(row=13, column=2, padx=10, pady=10)
+
+        # Operon members list
+        Label(
+            self.window,
+            text="Operon member genes",
+            justify=LEFT,
+            anchor="w",
+            background="#EDDFCD",
+        ).grid(sticky=W, row=14, column=0, padx=24, pady=10)
+        ttk.Button(
+            self.window,
+            text="Select file",
+            width=20,
+            command=lambda: self.file_dialog(
+                entry_object=self.operon_file_entry_text, ftype="txt"
+            ),
+        ).grid(row=14, column=2, padx=10, pady=10)
 
         # OK/Cancel
         ttk.Button(
-            self.w, text="OK", width=20, command=lambda: self.update_global_conf(self.w)
-        ).grid(row=16, column=1, padx=10, pady=52)
+            self.window,
+            text="OK",
+            width=20,
+            command=lambda: self.update_global_conf(self.window),
+        ).grid(row=17, column=1, padx=10, pady=52)
 
-        ttk.Button(self.w, text="Cancel", width=20, command=self.w.destroy).grid(
-            row=16, column=2, padx=10, pady=52
-        )
+        ttk.Button(
+            self.window, text="Cancel", width=20, command=self.window.destroy
+        ).grid(row=17, column=2, padx=10, pady=52)
 
         # GUI main loop
-        self.w.mainloop()
+        self.window.mainloop()
 
 
 def main():
@@ -4466,8 +4594,8 @@ def main():
     notify("Plotting initiation peak")
     plot_initiation_peak(peak=True, peak_range=[5, 25])
 
-    notify("Checking coverage profile")
-    generate_coverage_profiles(disabled=True)
+    notify("Detecting leaderless transcripts")
+    detect_leaderless_transcripts(disabled=False)
 
     notify("Generating report")
     generate_report(disabled=False)
