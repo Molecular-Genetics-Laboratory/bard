@@ -30,6 +30,7 @@
 #
 # ---------------------------------------------------------------------------
 print("Starting, please wait ...", end="\r")
+from scipy.cluster.hierarchy import dendrogram, linkage
 from collections import defaultdict
 from datetime import datetime as dt
 from Bio import SeqIO, SeqUtils
@@ -65,7 +66,7 @@ np.random.seed(12345)
 
 # This line is automatically updated before each commit
 # Do not edit
-versionstr = "bard v1.0 ID=16-27-10-09-07-2020"
+versionstr = "bard v1.0 ID=22-58-56-13-07-2020"
 
 codon_to_aa = {
     "ATA": "I",
@@ -599,6 +600,19 @@ Analysis report
 <img src="data:image/svg+xml;base64,{}" class="img-center"/>
 <hr>
 
+<h1> <p> Initiation modes </p> </h1>
+<div class="img-row">
+<div class="img-column">
+<img src="data:image/svg+xml;base64,{}" class="img-center"/>
+<img src="data:image/svg+xml;base64,{}" class="img-center"/>
+</div>
+<div class="img-column">
+<img src="data:image/svg+xml;base64,{}" class="img-center"/>
+<img src="data:image/svg+xml;base64,{}" class="img-center"/>
+</div>
+</div>
+<hr>
+
 <h1> <p> Termination signal </p> </h1>
 <img src="data:image/svg+xml;base64,{}" class="img-center"/>
 <hr>
@@ -813,6 +827,93 @@ def running_sum_argmin(v):
     # np.argmin() only returns the first minima,
     # even though multiple may be present
     return np.where(rsvec == min(rsvec))[0]
+
+
+def minmax_norm(v):
+    """
+    Min-max normalization of a matrix
+    Values range from 0 to 1
+    """
+    v = np.array(v)
+    v = np.apply_along_axis(lambda v: (v - min(v)) / (max(v) - min(v)), 1, v)
+    return v
+
+
+def zscore_norm(v):
+    """
+    Z-score normalization of a matrix
+    Values reflect #SD away from the mean
+    """
+    v = np.array(v)
+    v = np.apply_along_axis(lambda v: (v - np.mean(v)) / (np.std(v)), 1, v)
+    return v
+
+
+def cmatplot(
+    X,
+    blankout=False,
+    scaling="minmax",
+    cluster=True,
+    cluster_method="ward",
+    axes_ranges=[-100, 100, 0, 100],
+    palette="hot",
+    title="",  # shown on the plot
+    name="",  # used internally (for reportgen)
+):
+    """
+    Cluster and plot a 2Darray *without* using
+    the joke that is seaborn.clustermap()
+    """
+    try:
+        size = len(X)
+    except:
+        size = 0
+
+    if len(X) == 0 or blankout:
+        # No data to show
+        scaling = "none"
+        cluster = False
+        X = [[0, 0, 0, 0], [0, 0, 0, 0]]
+
+    if scaling == "minmax":
+        X = minmax_norm(X)
+    if scaling == "zscore":
+        X = zscore_norm(X)
+    if scaling == "none":
+        pass
+
+    if cluster:
+        hc = dendrogram(linkage(X, method=cluster_method))
+        index = hc["leaves"]
+        plt.close()  # don't plot dendrogram
+        X = X[index, :]
+
+    plt.imshow(
+        X, cmap=palette, interpolation="nearest", aspect="auto", extent=axes_ranges
+    )
+    plt.axvline(x=-6, color="dodgerblue", lw=2)
+    plt.axvline(x=10, color="dodgerblue", lw=2)
+    plt.gcf().set_size_inches(6.5, 6)
+    # plt.gca().axes.get_yaxis().set_visible(False)
+    plt.xticks(fontsize=14, rotation=0)
+    plt.tight_layout()
+    plt.xlabel("Nt. from CDS start", fontsize=15)
+    plt.yticks([])
+    plt.ylabel("{} (n={})".format(title, size), fontsize=15)
+
+    i1 = "{}{}_{}_{}.svg".format(
+        global_config["img_dir"],
+        global_config["session_id"],
+        "{}".format(name),
+        global_config["img_id"],
+    )
+    plotnames[name] = i1
+
+    plt.savefig(
+        i1, bbox_inches="tight", pad_inches=0.2,
+    )
+
+    plt.close()
 
 
 def update_operon_status():
@@ -1361,6 +1462,7 @@ def parse_gff():
 
 def index_of_value(vector, value):
     """
+    TODO: Redundant. Remove.
     Return the 0-based index of a numpy array which
     contains the specific value
     """
@@ -1505,6 +1607,19 @@ def script_init():
         notify(
             "Example: [-20, -10] or [0, 30] etc, where 0 denotes start", level="warn"
         )
+
+    # Cutoffs for the leaderless transcript detector
+    if "ldtran_max_cutoff" not in global_config:
+        # Gene will be ignored if maximum number of reads
+        # per nucleotide in the coverage profile is less
+        # than this threshold
+        global_config["ldtran_max_cutoff"] = 40
+
+    if "ldtran_sum_cutoff" not in global_config:
+        # Gene will be ignored if total number of reads
+        # in the coverage profile is less
+        # than this threshold
+        global_config["ldtran_sum_cutoff"] = 250
 
     # For a gene, get read coverage from 5' or 3' end
     if "readcov_from_terminal" not in global_config:
@@ -1683,7 +1798,7 @@ def save_file(data, filename, verbose=False):
 
 def generate_coverage_profiles(include_genes=[], nt_buffer=100, disabled=False):
     """
-    Extract read coverage profiles for leaderless transcript detection
+    Extract read coverage profiles for leaderless transcript detection.
     """
     if disabled:
         notify("Coverage profile is disabled", level="warn")
@@ -1953,7 +2068,6 @@ def get_gene_rpkm(gene_annotation):
     """
     Returns the read coverage for a gene in RPKM units
     """
-
     strand = gene_annotation["strand"]
     read_lengths = global_config["readlengths"]
     genomic_start = gene_annotation["start"]
@@ -2546,13 +2660,13 @@ def map_gene_to_endmaps(
     genes_used = []
 
     notify(
-        "{} gene(s) in high coverage list (out of {} total)".format(
+        "Found {} gene(s) in high coverage list (out of {} total)".format(
             len(high_coverage_genes), len(annotation.keys())
         ),
         level="notf",
     )
 
-    notify("Starting endmap scan (this can take some time)")
+    notify("Checking read alignments (this can take some time)")
 
     i, ant_sz = 0, len(high_coverage_genes)
 
@@ -3843,7 +3957,15 @@ def consistency_score_per_transcript():
     plt.close()
 
 
-def detect_leaderless_transcripts(disabled=False):
+def index_wrt_start(i, buffer):
+    """
+    TODO: Elaborate
+    """
+    j = [v for v in range(-buffer, +buffer + 1, 1)]
+    return j[i]
+
+
+def detect_leaderless_transcripts(disabled=False, nt_buffer=100):
     """
     Classify genes by the relative location of
     their translation start sites w.r.t to the
@@ -3858,22 +3980,123 @@ def detect_leaderless_transcripts(disabled=False):
 
     # get the read coverage profile within +/-100nt of the annotated
     # start codon
-    generate_coverage_profiles(disabled=False, nt_buffer=100)
+    generate_coverage_profiles(disabled=False, nt_buffer=nt_buffer)
+
+    gene_utr_status["xaxis"] = [i for i in range(-nt_buffer, nt_buffer + 1, 1)]
+
+    max_cutoff = global_config["ldtran_max_cutoff"]
+    sum_cutoff = global_config["ldtran_sum_cutoff"]
 
     for gene, profile in coverage_profile.items():
 
-        utr_status = {}
+        if (len(operon_genes) != 0) and (gene in operon_genes):
+            # notify("Ignoring {} (operon)".format(gene), level="warn")
+            continue
 
-        if max(profile) < 40:
-            # < 40 reads aligned per nt
-            # too few to make a decision
+        utr_status = {
+            "status": "",
+            "length": "",
+            "comment": [],
+        }
+
+        if max(profile) < max_cutoff or sum(profile) < sum_cutoff:
+            # too few reads
+            # notify("Ignoring {} (few reads)".format(gene), level="warn")
             continue
 
         minima = running_sum_argmin(profile)
 
         if len(minima) > 1:
-            # bail
+            # wut!?
+            gene_utr_status[gene] = utr_status["comment"].append("#minima > 1")
+            # notify("Ignoring {} (#minima >1)".format(gene), level="warn")
             continue
+
+        takeoff_index = index_wrt_start(minima[0], nt_buffer)
+
+        if (takeoff_index >= -6) and (takeoff_index < 10):
+            utr_status["status"] = "Leaderless"
+            utr_status["length"] = takeoff_index
+            # highconf
+            if np.mean(profile[70:94]) < 2:
+                utr_status["comment"].append("high_confidence")
+
+        elif (takeoff_index < -6) and (takeoff_index > -30):
+            utr_status["status"] = "Leadered"
+            utr_status["length"] = takeoff_index
+        # should be 0:110? was originally 0:94
+        elif (takeoff_index >= 10) and (np.mean(profile[0:94]) < 1.2):
+            utr_status["status"] = "downstream_initiator"
+            utr_status["length"] = takeoff_index
+
+        elif (takeoff_index <= -30) and (np.mean(profile[110 : len(profile)]) < 1.5):
+            utr_status["status"] = "upstream_initiator"
+            utr_status["length"] = takeoff_index
+        else:
+            utr_status["status"] = "unclassified"
+            utr_status["length"] = takeoff_index
+
+        gene_utr_status[gene] = utr_status
+
+    # leadered, notleadered, downstreaminits, unclassified
+    ldr, nld, dni, unc = [], [], [], []  # coverage data for heatmap
+    id_ldr, id_nld, id_dni, id_unc = [], [], [], []  # classified gene names
+
+    # TODO: make this a tunable param
+    leaderless_highconf = True  # only mention the highconf leaderless genes
+
+    for gene, status in gene_utr_status.items():
+
+        if gene == "xaxis":
+            continue
+
+        if status == None:
+            # can happen if we have >1 minima. TODO: Fixthis.
+            notify(
+                "{}: couldn't determine initiation mode".format(gene), level="warn",
+            )
+            continue
+
+        if status["status"] == "Leadered":
+            ldr.append(coverage_profile[gene])
+            id_ldr.append(gene)
+
+        # high confidence mode (TODO: make this optional)
+        if status["status"] == "Leaderless":
+            if (
+                (leaderless_highconf)
+                and (len(status["comment"]) != 0)
+                and (status["comment"][0] != "high_confidence")
+            ):
+                notify("Ignoring {} (not highconf)".format(gene), level="warn")
+                continue
+            nld.append(coverage_profile[gene])
+            id_nld.append(gene)
+
+        if status["status"] == "downstream_initiator":
+            dni.append(coverage_profile[gene])
+            id_dni.append(gene)
+
+        if status["status"] == "unclassified":
+            unc.append(coverage_profile[gene])
+            id_unc.append(gene)
+
+    cmatplot(ldr, title="Leadered transcripts", name="leadered_genes")
+    cmatplot(nld, title="Leaderless transcripts", name="leaderless_genes")
+    cmatplot(dni, title="Downstream initiators", name="downstream_initiators")
+    cmatplot(unc, title="Unclassified", name="unclassified")
+
+    # Data for heatmap
+    save_file(ldr, "leadered_genes_data")
+    save_file(nld, "leaderless_genes_data")
+    save_file(dni, "downstream_init_genes_data")
+    save_file(unc, "unclassified_init_genes_data")
+
+    # Save the gene names
+    save_file(id_ldr, "leadered_genes")
+    save_file(id_nld, "leaderless_genes")
+    save_file(id_dni, "downstream_init_genes")
+    save_file(id_unc, "unclassified_init_genes")
 
 
 def generate_metagene_vector():
@@ -4055,6 +4278,10 @@ def generate_report(disabled=False):
             load_svg(plotnames["kmer_metabar_with_offset"]),
             load_svg(plotnames["initiation"]),
             load_svg(plotnames["init_framing"]),
+            load_svg(plotnames["leaderless_genes"]),
+            load_svg(plotnames["downstream_initiators"]),
+            load_svg(plotnames["leadered_genes"]),
+            load_svg(plotnames["unclassified"]),
             load_svg(plotnames["termination"]),
             load_svg(plotnames["pps_metagene"]),
             load_svg(plotnames["per_codon_pps_heatmap"]),
@@ -4514,7 +4741,7 @@ def main():
     script_init()
     check_gene_list()
 
-    notify("Checking terminal base fractions")
+    notify("Checking read terminal base composition")
     read_terminal_stats()
 
     notify("Found {} gene(s) in annotation".format(len(annotation)))
@@ -4594,7 +4821,7 @@ def main():
     notify("Plotting initiation peak")
     plot_initiation_peak(peak=True, peak_range=[5, 25])
 
-    notify("Detecting leaderless transcripts")
+    notify("Scanning for leaderless transcripts")
     detect_leaderless_transcripts(disabled=False)
 
     notify("Generating report")
@@ -4614,4 +4841,5 @@ if __name__ == "__main__":
         main()
     except KeyboardInterrupt:
         global_config["bamfile"].close()
-        notify("Keyboard interrupt. Aborting.", level="crit", fatal=True)
+        print()
+        notify("Keyboard interrupt, aborting ...", level="crit", fatal=True)
