@@ -4400,7 +4400,20 @@ class configuration_panel:
 
         entry_object.set(path)
 
-    def update_global_conf(self, window):
+    def export_config(self, window):
+        self.update_global_config(window, exit=False)
+        opts = [("JSON file", "*.json"), ("all files", "*.*")]
+        fhout = fd.asksaveasfile(filetypes=opts, defaultextension=opts)
+        if fhout is None:
+            return
+        save_json(global_config, fhout.name)
+
+    def bard_gui_exit(self, window):
+        window.destroy()
+        print("\nCancelled\n")
+        raise SystemExit()
+
+    def update_global_config(self, window, exit=True):
         global_config["coding_sequence_path"] = self.cds_file.get()
         global_config["coding_sequence_format"] = "fasta"
         global_config["annotation_file_path"] = self.anno_file.get()
@@ -4422,7 +4435,9 @@ class configuration_panel:
         global_config["genes_overlap_exception"] = self.gex_file.get()
         global_config["operon_members_list"] = self.operon_file.get()
         global_config["annotation_feature_type"] = self.type_file.get()
-        window.destroy()
+
+        if exit:
+            window.destroy()
 
     def start(self):
         # Setups
@@ -4673,19 +4688,29 @@ class configuration_panel:
             ),
         ).grid(row=14, column=2, padx=10, pady=10)
 
-        # OK/Cancel
+        # Export/OK/Cancel
+        ttk.Button(
+            self.window,
+            text="Export to JSON",
+            width=22,
+            command=lambda: self.export_config(self.window),
+        ).grid(row=17, column=0, padx=10, pady=52)
+
         ttk.Button(
             self.window,
             text="OK",
             width=20,
-            command=lambda: self.update_global_conf(self.window),
+            command=lambda: self.update_global_config(self.window),
         ).grid(row=17, column=1, padx=10, pady=52)
 
         ttk.Button(
-            self.window, text="Cancel", width=20, command=self.window.destroy
+            self.window,
+            text="Cancel",
+            width=20,
+            command=lambda: self.bard_gui_exit(self.window),
         ).grid(row=17, column=2, padx=10, pady=52)
 
-        # GUI main loop
+        # start event loop
         self.window.mainloop()
 
 
