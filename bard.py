@@ -4725,7 +4725,7 @@ def main():
     print("         GNU General Public License for more details.")
     print("----------------------------------------------------------------\n")
 
-    if sys.argv[1] == "--gui":
+    if (len(sys.argv) > 1) and (sys.argv[1] == "--gui"):
         # Start GUI for configuration
         if TKINTER_INSTALLED:
             configuration_panel(resizable=False).start()
@@ -4753,11 +4753,14 @@ def main():
             ft.close()
 
             print(
-                "\033[33m       ABORT: Malformed or non-existant configuration file\033[m\n"
+                "\033[33m  ABORT: Malformed or nonexistent configuration file\033[m\n"
             )
-            print("  Usage: ")
-            print("         ~$ python bard.py config.json\n")
-            print("  A help file has been saved for your reference.\n")
+            print("  Usage: \n")
+            print("       Supply the configuration file directly:\n")
+            print("         ~$ python bard.py config.json\n\n   OR\n")
+            print("       Configure using the graphical interface:\n")
+            print("         ~$ python bard.py --gui\n\n")
+            print("  A help file (bard_config_help.txt) has been saved for your reference.\n")
             print("  Bye!\n")
 
             raise SystemExit()
