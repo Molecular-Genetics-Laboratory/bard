@@ -1,0 +1,772 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>MainWindow</class>
+ <widget class="QMainWindow" name="MainWindow">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>654</width>
+    <height>763</height>
+   </rect>
+  </property>
+  <property name="minimumSize">
+   <size>
+    <width>654</width>
+    <height>763</height>
+   </size>
+  </property>
+  <property name="maximumSize">
+   <size>
+    <width>654</width>
+    <height>763</height>
+   </size>
+  </property>
+  <property name="windowTitle">
+   <string>bard - Configuration panel</string>
+  </property>
+  <widget class="QWidget" name="centralwidget">
+   <widget class="QTabWidget" name="tabWidget">
+    <property name="geometry">
+     <rect>
+      <x>20</x>
+      <y>20</y>
+      <width>611</width>
+      <height>651</height>
+     </rect>
+    </property>
+    <property name="currentIndex">
+     <number>0</number>
+    </property>
+    <widget class="QWidget" name="tab">
+     <attribute name="title">
+      <string>General</string>
+     </attribute>
+     <widget class="QLabel" name="lbl_annotation">
+      <property name="geometry">
+       <rect>
+        <x>30</x>
+        <y>19</y>
+        <width>181</width>
+        <height>21</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>Annotation file (GFF/GTF) *</string>
+      </property>
+     </widget>
+     <widget class="QLabel" name="lbl_gtf_featuretag">
+      <property name="geometry">
+       <rect>
+        <x>30</x>
+        <y>61</y>
+        <width>161</width>
+        <height>16</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>Gene identifier tag *</string>
+      </property>
+     </widget>
+     <widget class="QLabel" name="lbl_gtf_featuretype">
+      <property name="geometry">
+       <rect>
+        <x>30</x>
+        <y>103</y>
+        <width>171</width>
+        <height>16</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>Annotation feature type  *</string>
+      </property>
+     </widget>
+     <widget class="QLabel" name="lbl_covcutoff">
+      <property name="geometry">
+       <rect>
+        <x>30</x>
+        <y>287</y>
+        <width>141</width>
+        <height>16</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>Read coverage cutoff</string>
+      </property>
+     </widget>
+     <widget class="QLabel" name="lbl_offset_dir">
+      <property name="geometry">
+       <rect>
+        <x>30</x>
+        <y>241</y>
+        <width>131</width>
+        <height>16</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>P-site offset direction</string>
+      </property>
+     </widget>
+     <widget class="QLabel" name="lbl_initscan">
+      <property name="geometry">
+       <rect>
+        <x>30</x>
+        <y>371</y>
+        <width>171</width>
+        <height>21</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>Initiation scan window (nt)</string>
+      </property>
+     </widget>
+     <widget class="QLabel" name="lbl_overlap">
+      <property name="geometry">
+       <rect>
+        <x>30</x>
+        <y>330</y>
+        <width>161</width>
+        <height>21</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>Ignore overlapping genes</string>
+      </property>
+     </widget>
+     <widget class="QLabel" name="lbl_listaction">
+      <property name="geometry">
+       <rect>
+        <x>30</x>
+        <y>492</y>
+        <width>121</width>
+        <height>21</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>Gene list action</string>
+      </property>
+     </widget>
+     <widget class="QLabel" name="lbl_kmer">
+      <property name="geometry">
+       <rect>
+        <x>30</x>
+        <y>412</y>
+        <width>131</width>
+        <height>21</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>Use readlengths (nt)</string>
+      </property>
+     </widget>
+     <widget class="QLabel" name="lbl_genelist">
+      <property name="geometry">
+       <rect>
+        <x>30</x>
+        <y>451</y>
+        <width>151</width>
+        <height>21</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>Arbitrary gene list (TXT)</string>
+      </property>
+     </widget>
+     <widget class="QLabel" name="lbl_overlapallow">
+      <property name="geometry">
+       <rect>
+        <x>30</x>
+        <y>532</y>
+        <width>181</width>
+        <height>21</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>Genes overlap allowed (TXT)</string>
+      </property>
+     </widget>
+     <widget class="QLabel" name="lbl_operonmember">
+      <property name="geometry">
+       <rect>
+        <x>30</x>
+        <y>571</y>
+        <width>181</width>
+        <height>21</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>Operon member genes (TXT)</string>
+      </property>
+     </widget>
+     <widget class="QLineEdit" name="gtf_entrybox">
+      <property name="geometry">
+       <rect>
+        <x>230</x>
+        <y>20</y>
+        <width>251</width>
+        <height>23</height>
+       </rect>
+      </property>
+      <property name="cursor">
+       <cursorShape>IBeamCursor</cursorShape>
+      </property>
+     </widget>
+     <widget class="QLineEdit" name="gtf_genetag_entrybox">
+      <property name="geometry">
+       <rect>
+        <x>230</x>
+        <y>60</y>
+        <width>251</width>
+        <height>23</height>
+       </rect>
+      </property>
+     </widget>
+     <widget class="QLineEdit" name="gtf_featuretype_entrybox">
+      <property name="geometry">
+       <rect>
+        <x>230</x>
+        <y>100</y>
+        <width>251</width>
+        <height>23</height>
+       </rect>
+      </property>
+     </widget>
+     <widget class="QLineEdit" name="cds_entrybox">
+      <property name="geometry">
+       <rect>
+        <x>230</x>
+        <y>144</y>
+        <width>251</width>
+        <height>23</height>
+       </rect>
+      </property>
+     </widget>
+     <widget class="QRadioButton" name="offset_rb_5">
+      <property name="geometry">
+       <rect>
+        <x>231</x>
+        <y>240</y>
+        <width>100</width>
+        <height>21</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>5' end</string>
+      </property>
+      <attribute name="buttonGroup">
+       <string notr="true">BG1</string>
+      </attribute>
+     </widget>
+     <widget class="QRadioButton" name="offset_rb_3">
+      <property name="geometry">
+       <rect>
+        <x>380</x>
+        <y>240</y>
+        <width>100</width>
+        <height>21</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>3' end</string>
+      </property>
+      <attribute name="buttonGroup">
+       <string notr="true">BG1</string>
+      </attribute>
+     </widget>
+     <widget class="QRadioButton" name="overlap_ignore_rb_yes">
+      <property name="geometry">
+       <rect>
+        <x>231</x>
+        <y>330</y>
+        <width>100</width>
+        <height>21</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>Yes</string>
+      </property>
+      <attribute name="buttonGroup">
+       <string notr="true">buttonGroup</string>
+      </attribute>
+     </widget>
+     <widget class="QRadioButton" name="overlap_ignore_rb_no">
+      <property name="geometry">
+       <rect>
+        <x>380</x>
+        <y>330</y>
+        <width>100</width>
+        <height>21</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>No</string>
+      </property>
+      <attribute name="buttonGroup">
+       <string notr="true">buttonGroup</string>
+      </attribute>
+     </widget>
+     <widget class="QLineEdit" name="initscan_lower_entrybox">
+      <property name="geometry">
+       <rect>
+        <x>230</x>
+        <y>370</y>
+        <width>101</width>
+        <height>23</height>
+       </rect>
+      </property>
+     </widget>
+     <widget class="QLabel" name="label_35">
+      <property name="geometry">
+       <rect>
+        <x>350</x>
+        <y>370</y>
+        <width>31</width>
+        <height>21</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>to</string>
+      </property>
+     </widget>
+     <widget class="QLineEdit" name="initscan_upper_entrybox">
+      <property name="geometry">
+       <rect>
+        <x>380</x>
+        <y>370</y>
+        <width>101</width>
+        <height>23</height>
+       </rect>
+      </property>
+     </widget>
+     <widget class="QLineEdit" name="kmer_entrybox">
+      <property name="geometry">
+       <rect>
+        <x>230</x>
+        <y>410</y>
+        <width>251</width>
+        <height>23</height>
+       </rect>
+      </property>
+     </widget>
+     <widget class="QLineEdit" name="genelist_entrybox">
+      <property name="geometry">
+       <rect>
+        <x>230</x>
+        <y>450</y>
+        <width>251</width>
+        <height>23</height>
+       </rect>
+      </property>
+     </widget>
+     <widget class="QPushButton" name="btn_gtf">
+      <property name="geometry">
+       <rect>
+        <x>510</x>
+        <y>20</y>
+        <width>80</width>
+        <height>23</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>Select file</string>
+      </property>
+     </widget>
+     <widget class="QPushButton" name="btn_cds">
+      <property name="geometry">
+       <rect>
+        <x>510</x>
+        <y>144</y>
+        <width>80</width>
+        <height>23</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>Select file</string>
+      </property>
+     </widget>
+     <widget class="QPushButton" name="btn_genelist">
+      <property name="geometry">
+       <rect>
+        <x>510</x>
+        <y>450</y>
+        <width>80</width>
+        <height>23</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>Select file</string>
+      </property>
+     </widget>
+     <widget class="QLabel" name="lbl_cds_file">
+      <property name="geometry">
+       <rect>
+        <x>30</x>
+        <y>148</y>
+        <width>171</width>
+        <height>16</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>CDS file (FASTA) *</string>
+      </property>
+     </widget>
+     <widget class="QComboBox" name="cov_metric_dropdown">
+      <property name="geometry">
+       <rect>
+        <x>368</x>
+        <y>282</y>
+        <width>111</width>
+        <height>23</height>
+       </rect>
+      </property>
+     </widget>
+     <widget class="QDoubleSpinBox" name="cov_cutoff_spinbox">
+      <property name="geometry">
+       <rect>
+        <x>230</x>
+        <y>282</y>
+        <width>111</width>
+        <height>24</height>
+       </rect>
+      </property>
+     </widget>
+     <widget class="QComboBox" name="listaction_dropdown">
+      <property name="geometry">
+       <rect>
+        <x>230</x>
+        <y>490</y>
+        <width>251</width>
+        <height>23</height>
+       </rect>
+      </property>
+     </widget>
+     <widget class="QLineEdit" name="allowoverlap_entrybox">
+      <property name="geometry">
+       <rect>
+        <x>230</x>
+        <y>530</y>
+        <width>251</width>
+        <height>23</height>
+       </rect>
+      </property>
+     </widget>
+     <widget class="QPushButton" name="btn_overlap">
+      <property name="geometry">
+       <rect>
+        <x>510</x>
+        <y>530</y>
+        <width>80</width>
+        <height>23</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>Select file</string>
+      </property>
+     </widget>
+     <widget class="QLineEdit" name="operonmember_entrybox">
+      <property name="geometry">
+       <rect>
+        <x>230</x>
+        <y>570</y>
+        <width>251</width>
+        <height>23</height>
+       </rect>
+      </property>
+     </widget>
+     <widget class="QPushButton" name="btn_operon">
+      <property name="geometry">
+       <rect>
+        <x>510</x>
+        <y>570</y>
+        <width>80</width>
+        <height>23</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>Select file</string>
+      </property>
+     </widget>
+     <widget class="QLineEdit" name="bam_entrybox">
+      <property name="geometry">
+       <rect>
+        <x>230</x>
+        <y>190</y>
+        <width>251</width>
+        <height>23</height>
+       </rect>
+      </property>
+     </widget>
+     <widget class="QLabel" name="lbl_bamfile">
+      <property name="geometry">
+       <rect>
+        <x>30</x>
+        <y>193</y>
+        <width>171</width>
+        <height>16</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>Alignment file (BAM) *</string>
+      </property>
+     </widget>
+     <widget class="QPushButton" name="btn_bam">
+      <property name="geometry">
+       <rect>
+        <x>510</x>
+        <y>190</y>
+        <width>80</width>
+        <height>23</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>Select file</string>
+      </property>
+     </widget>
+    </widget>
+    <widget class="QWidget" name="tab_2">
+     <attribute name="title">
+      <string>Advanced</string>
+     </attribute>
+     <widget class="QLabel" name="label">
+      <property name="geometry">
+       <rect>
+        <x>19</x>
+        <y>4</y>
+        <width>501</width>
+        <height>41</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>Some internal defaults. Changing these may have unintended side effects.</string>
+      </property>
+     </widget>
+     <widget class="QLabel" name="lbl_ldtran_maxcut">
+      <property name="geometry">
+       <rect>
+        <x>48</x>
+        <y>138</y>
+        <width>160</width>
+        <height>21</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>LDTRAN_MAX_CUTOFF</string>
+      </property>
+     </widget>
+     <widget class="QDoubleSpinBox" name="ldtran_sum_cutoff_spinbox">
+      <property name="geometry">
+       <rect>
+        <x>258</x>
+        <y>184</y>
+        <width>121</width>
+        <height>24</height>
+       </rect>
+      </property>
+     </widget>
+     <widget class="QLabel" name="lbl_ldtran_sumcut">
+      <property name="geometry">
+       <rect>
+        <x>48</x>
+        <y>186</y>
+        <width>181</width>
+        <height>16</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>LDTRAN_SUM_CUTOFF</string>
+      </property>
+     </widget>
+     <widget class="QDoubleSpinBox" name="ldtran_max_cutoff_spinbox">
+      <property name="geometry">
+       <rect>
+        <x>258</x>
+        <y>140</y>
+        <width>121</width>
+        <height>24</height>
+       </rect>
+      </property>
+     </widget>
+     <widget class="QLabel" name="lbl_rdcov_term">
+      <property name="geometry">
+       <rect>
+        <x>48</x>
+        <y>232</y>
+        <width>181</width>
+        <height>16</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>RDCOV_FRM_TERMINAL</string>
+      </property>
+     </widget>
+     <widget class="QLabel" name="lbl_rdcov_nt_start">
+      <property name="geometry">
+       <rect>
+        <x>48</x>
+        <y>277</y>
+        <width>181</width>
+        <height>16</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>RDCOV_IGNORE_NTS_START</string>
+      </property>
+     </widget>
+     <widget class="QLabel" name="lbl_verbose_filename">
+      <property name="geometry">
+       <rect>
+        <x>48</x>
+        <y>323</y>
+        <width>181</width>
+        <height>16</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>VERBOSE_FILENAMES</string>
+      </property>
+     </widget>
+     <widget class="QCheckBox" name="verbose_filename_checkbox">
+      <property name="geometry">
+       <rect>
+        <x>260</x>
+        <y>320</y>
+        <width>85</width>
+        <height>21</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>Yes</string>
+      </property>
+     </widget>
+     <widget class="QComboBox" name="dropdown_readcov_frm_terminal">
+      <property name="geometry">
+       <rect>
+        <x>258</x>
+        <y>229</y>
+        <width>121</width>
+        <height>24</height>
+       </rect>
+      </property>
+     </widget>
+     <widget class="QLineEdit" name="gtf_transcriptTag_entrybox">
+      <property name="geometry">
+       <rect>
+        <x>258</x>
+        <y>93</y>
+        <width>121</width>
+        <height>24</height>
+       </rect>
+      </property>
+     </widget>
+     <widget class="QLabel" name="lbl_transcript_id">
+      <property name="geometry">
+       <rect>
+        <x>48</x>
+        <y>91</y>
+        <width>191</width>
+        <height>21</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>TRANSCRIPT_IDENTIFIER_TAG</string>
+      </property>
+     </widget>
+     <widget class="QSpinBox" name="ignore_nts_start_spinbox">
+      <property name="geometry">
+       <rect>
+        <x>258</x>
+        <y>274</y>
+        <width>121</width>
+        <height>24</height>
+       </rect>
+      </property>
+     </widget>
+    </widget>
+   </widget>
+   <widget class="QDialogButtonBox" name="buttonBox">
+    <property name="geometry">
+     <rect>
+      <x>460</x>
+      <y>680</y>
+      <width>171</width>
+      <height>41</height>
+     </rect>
+    </property>
+    <property name="standardButtons">
+     <set>QDialogButtonBox::Cancel|QDialogButtonBox::Ok</set>
+    </property>
+   </widget>
+   <widget class="QPushButton" name="btn_export_json">
+    <property name="geometry">
+     <rect>
+      <x>36</x>
+      <y>688</y>
+      <width>131</width>
+      <height>23</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Save configuration</string>
+    </property>
+   </widget>
+  </widget>
+  <widget class="QMenuBar" name="menubar">
+   <property name="geometry">
+    <rect>
+     <x>0</x>
+     <y>0</y>
+     <width>654</width>
+     <height>20</height>
+    </rect>
+   </property>
+   <widget class="QMenu" name="menuFile">
+    <property name="title">
+     <string>File</string>
+    </property>
+    <addaction name="separator"/>
+    <addaction name="actionLoad_configuration"/>
+    <addaction name="actionExit_2"/>
+   </widget>
+   <widget class="QMenu" name="menuHelp">
+    <property name="title">
+     <string>Help</string>
+    </property>
+    <addaction name="actionAbout"/>
+   </widget>
+   <addaction name="menuFile"/>
+   <addaction name="menuHelp"/>
+  </widget>
+  <widget class="QStatusBar" name="statusbar"/>
+  <action name="actionSave_configuration">
+   <property name="text">
+    <string>Export to JSON</string>
+   </property>
+  </action>
+  <action name="actionExit">
+   <property name="text">
+    <string>Exit</string>
+   </property>
+  </action>
+  <action name="actionAbout">
+   <property name="text">
+    <string>About</string>
+   </property>
+  </action>
+  <action name="actionLoad_configuration">
+   <property name="text">
+    <string>Load configuration</string>
+   </property>
+  </action>
+  <action name="actionExit_2">
+   <property name="text">
+    <string>Exit</string>
+   </property>
+  </action>
+ </widget>
+ <resources/>
+ <connections/>
+ <buttongroups>
+  <buttongroup name="BG1"/>
+  <buttongroup name="buttonGroup"/>
+ </buttongroups>
+</ui>
