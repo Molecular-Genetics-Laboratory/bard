@@ -35,7 +35,9 @@ print("Starting, please wait ...", end="\r")
 from scipy.cluster.hierarchy import dendrogram, linkage
 from collections import defaultdict
 from datetime import datetime as dt
-from Bio import SeqIO, SeqUtils
+# from Bio import SeqIO, SeqUtils
+import matplotlib.pyplot as plt
+from Bio import SeqIO
 import seaborn as sns
 import numpy as np
 import inspect
@@ -47,8 +49,7 @@ import sys
 import os
 
 
-import matplotlib.pyplot as plt
-from matplotlib.pyplot import figure
+# from matplotlib.pyplot import figure
 
 # Check if GUI toolkit is available
 QT5_INSTALLED = True
@@ -786,18 +787,73 @@ unique = lambda v: list(set(v))
 stats = lambda v: {"avg": round(np.mean(v), 3), "std": round(np.std(v), 3)}
 
 
+def sql_connect():
+    """
+    Connecting to the database.
+    Maybe used for handling eukaryotic data
+
+    Returns
+    -------
+    None.
+
+    """
+    import sqlite3
+    # create sqlite connection
+    dbcon = sqlite3.connect("fragments.sqlite3")
+    # create table for RPFs and define the data format
+    initialize_db = "create table fragments(name text, size int, base5 text, base3 text)"
+    
+    dbcon.execute(initialize_db)
+    
+    store_cmd = "insert into fragments values(?, ?, ?, ?)"
+    
+    # Loop over our hash and store the data
+    for key, value in a.items():
+        params = (key, value[0], value[1], value[2])
+        dbcon.execute(store_cmd, params)
+        
+    dbcon.commit() # save changes
+    
+    retrieve_cmd = "select * from fragments where base3='C'"
+    
+    for row in dbcon.execute(retrieve_cmd):
+        print(row)
+        
+    dbcon.close()
+    
+        
+
 def line_number():
     """
     Calling this function from a particular line
     in our program will return the corresponding
     line number. Useful for debugging.
+
+    Returns
+    -------
+    int
+        Which line did this function get called 
+        from?
     """
     return inspect.currentframe().f_back.f_lineno
 
 
 def load_json(file="object.json"):
     """
-    Load a JSON file
+    Load a JSON file from disk
+
+    Parameters
+    ----------
+    file : string, optional
+        JSON file to load from disk. 
+        The default is "object.json".
+
+    Returns
+    -------
+    dictionary
+        The JSON file represented as a Python
+        dictionary
+
     """
     with open(file, "r") as read_file:
         return json.load(read_file)
@@ -805,7 +861,22 @@ def load_json(file="object.json"):
 
 def save_json(data, file="object.json"):
     """
-    Save object as JSON
+    Marshal a Python object to JSON and
+    save to disk. Binary/non-serializable
+    data can't be stored in this format.
+
+    Parameters
+    ----------
+    data : dictionary/string/list/int/float ..
+        Any JSON serializable Python object
+    file : string, optional
+        The JSON file will be saved with the following name.
+        The default is "object.json".
+
+    Returns
+    -------
+    None.
+
     """
     with open(file, "w") as write_file:
         json.dump(data, write_file, indent=4)
@@ -813,8 +884,20 @@ def save_json(data, file="object.json"):
 
 def running_sum_argmin(v):
     """
-    Get the argument of minima of the running
+    Get the argument of minima(s) of the running
     sum vector of a read coverage profile.
+
+    Parameters
+    ----------
+    v : list
+        Read coverage profile within a certain range
+        of chromosomal coordinates.
+
+    Returns
+    -------
+    numpy array
+        
+
     """
     avg = np.mean(v)
     rsvec = []
@@ -1082,7 +1165,7 @@ def reset():
     annotation.clear()
     __warnings.clear()
     endmap_vectors.clear()
-    metagene_per_len.clear()
+    metagene_per_readlength.clear()
     overlap_dict.clear()
     ribosome_densities.clear()
     transcripts_dict.clear()
@@ -1267,7 +1350,8 @@ def offset_delta_for_metagene():
     progression = global_config["offset_progression"]
 
     x_axis = metagene_per_readlength["xaxis"]
-    peak_heights, n = {}, 1  # readlength --> peak_height
+    # peak_heights, n = {}, 1  # readlength --> peak_height
+    peak_heights = {}
 
     for rpf_length, metagene_vector in metagene_per_readlength.items():
 
@@ -2115,7 +2199,7 @@ def gene_coverage(gene_annotation):
     ignore_terminal_nt = global_config["readcov_ignore_nts"]
     from_which_end = global_config["readcov_from_terminal"]
     percentage_length = global_config["readcov_percentage_length"]
-    length_to_consider = (percentage_length / 100) * gene_length
+    # length_to_consider = (percentage_length / 100) * gene_length
 
     # Is the gene long enough for coverage calculation?
     if (gene_length >= (ignore_terminal_nt + 2)) == False:
@@ -2522,8 +2606,8 @@ def position_list_to_endmap_vector(mapdict, config, gene_annotation):
     by the element indices). Separate vectors for each read length.
     For a single gene.
     """
-    start = config["start"]
-    stop = config["stop"]
+    # start = config["start"]
+    # stop = config["stop"]
     # Gene annotation details
     strand = gene_annotation["strand"]
     genomic_start = gene_annotation["start"]
