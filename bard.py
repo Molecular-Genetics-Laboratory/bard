@@ -1544,17 +1544,6 @@ def parse_gff():
     save_file(annotation, "annotation", verbose=global_config["filename_verbosity"])
 
 
-def index_of_value(vector, value):
-    """
-    TODO: Redundant. Remove.
-    Return the 0-based index of a numpy array which
-    contains the specific value
-    """
-    try:
-        return np.where(vector == value)[0][0]
-    except:
-        return
-
 
 def script_init():
     """
@@ -2560,20 +2549,20 @@ def terminal_alignment_positions_per_readlength(
         # 5' coordinate of crick strand read
         if terminal_map == "three_prime" and read.is_reverse:
             terminal_coordinate = read.reference_start + 1
-        # TODO: why are we using np.array() here again?
+
         if apply_offset == False:
-            master_dict[read.reference_length].append(np.array(terminal_coordinate))
+            master_dict[read.reference_length].append(terminal_coordinate)
 
         if apply_offset == True and terminal_map == "five_prime":
 
             if not read.is_reverse:
                 master_dict[read.reference_length].append(
-                    np.array(terminal_coordinate)
+                    terminal_coordinate
                     + abs(value_from_dict(offsets, read.reference_length))
                 )
             if read.is_reverse:
                 master_dict[read.reference_length].append(
-                    np.array(terminal_coordinate)
+                    terminal_coordinate
                     - abs(value_from_dict(offsets, read.reference_length))
                 )
 
@@ -2581,12 +2570,12 @@ def terminal_alignment_positions_per_readlength(
 
             if not read.is_reverse:
                 master_dict[read.reference_length].append(
-                    np.array(terminal_coordinate)
+                    terminal_coordinate
                     - abs(value_from_dict(offsets, read.reference_length))
                 )
             if read.is_reverse:
                 master_dict[read.reference_length].append(
-                    np.array(terminal_coordinate)
+                    terminal_coordinate
                     + abs(value_from_dict(offsets, read.reference_length))
                 )
 
@@ -2653,15 +2642,15 @@ def position_list_to_endmap_vector(mapdict, config, gene_annotation):
             if (maps >= (-upto_upstream_nt)) and (
                 maps <= upto_downstrm_nt + gene_length
             ):
-                index = index_of_value(indexes, maps)
+                index = np.where(indexes == maps)[0][0]
                 if index == None:
                     # Element doesn't exist
                     continue
 
                 nullvec[index] = nullvec[index] + 1
 
-        tmp_maps[length] = nullvec.copy()  # not ideal
-        nullvec = np.delete(nullvec, [i for i in range(len(nullvec))])
+        tmp_maps[length] = nullvec  #.copy() not ideal
+        #nullvec = np.delete(nullvec, [i for i in range(len(nullvec))])
 
     return tmp_maps
 
