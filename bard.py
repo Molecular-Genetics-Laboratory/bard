@@ -35,6 +35,7 @@ print("Starting, please wait ...", end="\r")
 from scipy.cluster.hierarchy import dendrogram, linkage
 from collections import defaultdict
 from datetime import datetime as dt
+
 # from Bio import SeqIO, SeqUtils
 import matplotlib.pyplot as plt
 from Bio import SeqIO
@@ -798,30 +799,32 @@ def sql_connect():
 
     """
     import sqlite3
+
     # create sqlite connection
     dbcon = sqlite3.connect("fragments.sqlite3")
     # create table for RPFs and define the data format
-    initialize_db = "create table fragments(name text, size int, base5 text, base3 text)"
-    
+    initialize_db = (
+        "create table fragments(name text, size int, base5 text, base3 text)"
+    )
+
     dbcon.execute(initialize_db)
-    
+
     store_cmd = "insert into fragments values(?, ?, ?, ?)"
-    
+
     # Loop over our hash and store the data
     for key, value in a.items():
         params = (key, value[0], value[1], value[2])
         dbcon.execute(store_cmd, params)
-        
-    dbcon.commit() # save changes
-    
+
+    dbcon.commit()  # save changes
+
     retrieve_cmd = "select * from fragments where base3='C'"
-    
+
     for row in dbcon.execute(retrieve_cmd):
         print(row)
-        
+
     dbcon.close()
-    
-        
+
 
 def line_number():
     """
@@ -1542,7 +1545,6 @@ def parse_gff():
         notify("Please verify the GFF/GTF file (2nd column)", level="crit", fatal=True)
 
     save_file(annotation, "annotation", verbose=global_config["filename_verbosity"])
-
 
 
 def script_init():
@@ -2431,7 +2433,7 @@ def terminal_alignment_positions_per_readlength(
     their 5' or 3' ends (for a specific gene)
     """
     master_dict = defaultdict(list)
-    config = {}
+    # config = {}
     genomic_start = gene_annotation["start"]
     genomic_stop = gene_annotation["stop"]
     gene_length = abs(genomic_start - genomic_stop)
@@ -2443,6 +2445,7 @@ def terminal_alignment_positions_per_readlength(
     _buffer_ = global_config["mapping_buffer"]
     terminal_map = global_config["check_offset_from"]
     read_lengths = global_config["readlengths"]
+    strand = gene_annotation["strand"]
 
     if offset_site == "P":
         offsets = offsets_p
@@ -2465,13 +2468,13 @@ def terminal_alignment_positions_per_readlength(
         start = genomic_stop - (upto_downstrm_nt + _buffer_) - gene_length
         stop = genomic_stop + (upto_upstream_nt + _buffer_)
 
-    # Will be returned with the maps
-    config["start"] = start
-    config["stop"] = stop
+    # # Will be returned with the maps
+    # config["start"] = start
+    # config["stop"] = stop
 
     # Ignore genes too close to chromosomal start (including buffering)
     if start <= 0:
-        return (master_dict, config)
+        return None
 
     i, j = 0, 0
 
@@ -2579,38 +2582,13 @@ def terminal_alignment_positions_per_readlength(
                     + abs(value_from_dict(offsets, read.reference_length))
                 )
 
-    return (master_dict, config)
-
-
-# INPUT:  1. Output from terminal_alignment_positions_per_readlength()
-#         2. The annotation data of the gene in question
-#         3. The buffered start and stop coordinates over which
-#            to calculate the vectors
-#
-# OUTPUT: Dictionary mapping gene_name --> readlength --> endmap_vector
-def position_list_to_endmap_vector(mapdict, config, gene_annotation):
-    """
-    Returns a vector, each element denoting the number of 5' or 3'
-    read terminals aligning per nucleotide position (represented
-    by the element indices). Separate vectors for each read length.
-    For a single gene.
-    """
-    # start = config["start"]
-    # stop = config["stop"]
-    # Gene annotation details
-    strand = gene_annotation["strand"]
-    genomic_start = gene_annotation["start"]
-    genomic_stop = gene_annotation["stop"]
-    gene_length = abs(genomic_start - genomic_stop)
-    # How many nt up and downstream of the start codon are
-    # we supposed to consider
-    upto_upstream_nt = global_config["endmap_upstream"]
-    upto_downstrm_nt = global_config["endmap_downstream"]
+    # return (master_dict, config)
+    # Stage 2
     # master
     tmp_maps = {}
     # Convert the defaultdict list to numpy arrays for
     # easier handling
-    for length, mappings in mapdict.items():
+    for length, mappings in master_dict.items():
         if length not in global_config["readlengths"]:
             continue
         tmp_maps[length] = np.array(mappings)
@@ -2649,10 +2627,84 @@ def position_list_to_endmap_vector(mapdict, config, gene_annotation):
 
                 nullvec[index] = nullvec[index] + 1
 
-        tmp_maps[length] = nullvec  #.copy() not ideal
-        #nullvec = np.delete(nullvec, [i for i in range(len(nullvec))])
+        tmp_maps[length] = nullvec  # .copy() not ideal
+        # nullvec = np.delete(nullvec, [i for i in range(len(nullvec))])
 
     return tmp_maps
+
+
+# # INPUT:  1. Output from terminal_alignment_positions_per_readlength()
+# #         2. The annotation data of the gene in question
+# #         3. The buffered start and stop coordinates over which
+# #            to calculate the vectors
+# #
+# # OUTPUT: Dictionary mapping gene_name --> readlength --> endmap_vector
+# def position_list_to_endmap_vector(mapdict, config, gene_annotation):
+#     """
+#     Returns a vector, each element denoting the number of 5' or 3'
+#     read terminals aligning per nucleotide position (represented
+#     by the element indices). Separate vectors for each read length.
+#     For a single gene.
+#     """
+#     return
+#     # start = config["start"]
+#     # stop = config["stop"]
+#     # Gene annotation details
+#     strand = gene_annotation["strand"]
+#     genomic_start = gene_annotation["start"]
+#     genomic_stop = gene_annotation["stop"]
+#     gene_length = abs(genomic_start - genomic_stop)
+#     # How many nt up and downstream of the start codon are
+#     # we supposed to consider
+#     upto_upstream_nt = global_config["endmap_upstream"]
+#     upto_downstrm_nt = global_config["endmap_downstream"]
+#     # master
+#     tmp_maps = {}
+#     # Convert the defaultdict list to numpy arrays for
+#     # easier handling
+#     for length, mappings in mapdict.items():
+#         if length not in global_config["readlengths"]:
+#             continue
+#         tmp_maps[length] = np.array(mappings)
+
+#     # Reset genomic mappings so that start codon gets index 0
+#     if strand == "+":
+#         for length, mappings in tmp_maps.items():
+#             tmp_maps[length] = mappings - genomic_start
+#     if strand == "-":
+#         for length, mappings in tmp_maps.items():
+#             tmp_maps[length] = genomic_stop - mappings
+
+#     # A numpy array holding the indexes around the genomic region
+#     indexes = np.array(
+#         [i for i in range(-upto_upstream_nt, upto_downstrm_nt + gene_length + 1, 1)]
+#     )
+
+#     # Indexes for plotting the metagene
+#     metagene_per_readlength["xaxis"] = indexes
+#     # Zeroed vector, each element will be incremented by the read counts
+#     # Element indices equivalent to nucleotide positons
+#     template = np.zeros(len(indexes))
+
+#     # Convert endmaps to vectors
+#     for length, mappings in tmp_maps.items():
+#         nullvec = template.copy()
+
+#         for maps in mappings:
+#             if (maps >= (-upto_upstream_nt)) and (
+#                 maps <= upto_downstrm_nt + gene_length
+#             ):
+#                 index = np.where(indexes == maps)[0][0]
+#                 if index == None:
+#                     # Element doesn't exist
+#                     continue
+
+#                 nullvec[index] = nullvec[index] + 1
+
+#         tmp_maps[length] = nullvec  #.copy() not ideal
+#         #nullvec = np.delete(nullvec, [i for i in range(len(nullvec))])
+
+#     return tmp_maps
 
 
 def detect_overlaps():
@@ -2773,32 +2825,57 @@ def map_gene_to_endmaps(
 
         genes_used.append(gene_name)
 
+        # # Get read terminal alignment coordinates
+        # maps_P, cnfs_P = terminal_alignment_positions_per_readlength(
+        #     details,
+        #     apply_offset,
+        #     offset_site="P",
+        #     codons_to_skip=only_reads_with_codons,
+        # )
+
+        # maps_E, cnfs_E = terminal_alignment_positions_per_readlength(
+        #     details,
+        #     apply_offset,
+        #     offset_site="E",
+        #     codons_to_skip=only_reads_with_codons,
+        # )
+
+        # maps_A, cnfs_A = terminal_alignment_positions_per_readlength(
+        #     details,
+        #     apply_offset,
+        #     offset_site="A",
+        #     codons_to_skip=only_reads_with_codons,
+        # )
         # Get read terminal alignment coordinates
-        maps_P, cnfs_P = terminal_alignment_positions_per_readlength(
+        endmaps_P = terminal_alignment_positions_per_readlength(
             details,
             apply_offset,
             offset_site="P",
             codons_to_skip=only_reads_with_codons,
         )
 
-        maps_E, cnfs_E = terminal_alignment_positions_per_readlength(
+        endmaps_E = terminal_alignment_positions_per_readlength(
             details,
             apply_offset,
             offset_site="E",
             codons_to_skip=only_reads_with_codons,
         )
 
-        maps_A, cnfs_A = terminal_alignment_positions_per_readlength(
+        endmaps_A = terminal_alignment_positions_per_readlength(
             details,
             apply_offset,
             offset_site="A",
             codons_to_skip=only_reads_with_codons,
         )
 
+        # Skip genes too close to the Chromosomal start
+        if endmaps_P == None:  # all should return None
+            continue
+
         # Convert coordinate list to endmap vector
-        endmaps_P = position_list_to_endmap_vector(maps_P, cnfs_P, details)
-        endmaps_E = position_list_to_endmap_vector(maps_E, cnfs_E, details)
-        endmaps_A = position_list_to_endmap_vector(maps_A, cnfs_A, details)
+        # endmaps_P = position_list_to_endmap_vector(maps_P, cnfs_P, details)
+        # endmaps_E = position_list_to_endmap_vector(maps_E, cnfs_E, details)
+        # endmaps_A = position_list_to_endmap_vector(maps_A, cnfs_A, details)
 
         endmap_vectors["E"][gene_name] = endmaps_E
         endmap_vectors["P"][gene_name] = endmaps_P
