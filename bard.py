@@ -2418,21 +2418,23 @@ def skip_read(
 # OUTPUT: 1. Defaultdict, mapping the length of an RPF to a
 #            list of it's 5' or 3' end alignment coordinates
 #            eg: master_dict[28] = [1000, 1000, 1002,1050,1050,1050, ...]
-#         2. Small config dictionary containing the start and
-#            stop coordinates after padding (upstream+buffer)
-#            along with the strand information
 def terminal_alignment_positions_per_readlength(
     gene_annotation,
     apply_offset=False,
-    offset_site="P",
-    ignore_reads_by_nt={5: [], 3: []},  # This option is disabled
-    codons_to_skip={"E": [], "P": [], "A": []},
+    # offset_site="P",
+    # ignore_reads_by_nt={5: [], 3: []},  # This option is disabled
+    # codons_to_skip={"E": [], "P": [], "A": []},
 ):
     """
+    TODO: This is not KISS/DRY compliant!!
     For each read length, get a list of alignment positions of
     their 5' or 3' ends (for a specific gene)
     """
-    master_dict = defaultdict(list)
+    master_dict_E = defaultdict(list)
+    master_dict_P = defaultdict(list)
+    master_dict_A = defaultdict(list)
+
+    reads_to_use = global_config["readlengths"]
     # config = {}
     genomic_start = gene_annotation["start"]
     genomic_stop = gene_annotation["stop"]
@@ -2447,14 +2449,14 @@ def terminal_alignment_positions_per_readlength(
     read_lengths = global_config["readlengths"]
     strand = gene_annotation["strand"]
 
-    if offset_site == "P":
-        offsets = offsets_p
-    if offset_site == "A":
-        offsets = offsets_a
-    if offset_site == "E":
-        offsets = offsets_e
+    # if offset_site == "P":
+    #     offsets = offsets_p
+    # if offset_site == "A":
+    #     offsets = offsets_a
+    # if offset_site == "E":
+    #     offsets = offsets_e
 
-    if apply_offset and (len(offsets) == 0):
+    if apply_offset and (len(offsets_p) == 0):  # one available means all are
         notify("Tried to apply offsets but none available", level="warn", onetime=True)
         apply_offset = False
 
@@ -2476,7 +2478,7 @@ def terminal_alignment_positions_per_readlength(
     if start <= 0:
         return None
 
-    i, j = 0, 0
+    # i, j = 0, 0
 
     for read in bamfile.fetch(reference=reference_id, start=start, stop=stop):
 
@@ -2514,29 +2516,29 @@ def terminal_alignment_positions_per_readlength(
         #        # skip the read
         #        continue
 
-        if (
-            (len(codons_to_skip["E"]) != 0)
-            or (len(codons_to_skip["P"]) != 0)
-            or (len(codons_to_skip["A"]) != 0)
-        ):
+        # if (
+        #     (len(codons_to_skip["E"]) != 0)
+        #     or (len(codons_to_skip["P"]) != 0)
+        #     or (len(codons_to_skip["A"]) != 0)
+        # ):
 
-            seq = read.query_sequence
-            delta = abs(
-                value_from_dict(
-                    offsets_p,  # we only consider the p-site offset
-                    read.reference_length,
-                )
-            )
+        #     seq = read.query_sequence
+        #     delta = abs(
+        #         value_from_dict(
+        #             offsets_p,  # we only consider the p-site offset
+        #             read.reference_length,
+        #         )
+        #     )
 
-            if read.is_reverse:
-                if skip_read(seq, codons_to_skip, delta, "-"):
-                    i += 1
-                    continue
+        #     if read.is_reverse:
+        #         if skip_read(seq, codons_to_skip, delta, "-"):
+        #             i += 1
+        #             continue
 
-            if not read.is_reverse:
-                if skip_read(seq, codons_to_skip, delta, "+"):
-                    j += 1
-                    continue
+        #     if not read.is_reverse:
+        #         if skip_read(seq, codons_to_skip, delta, "+"):
+        #             j += 1
+        #             continue
 
         terminal_coordinate = 0
 
@@ -2554,52 +2556,108 @@ def terminal_alignment_positions_per_readlength(
             terminal_coordinate = read.reference_start + 1
 
         if apply_offset == False:
-            master_dict[read.reference_length].append(terminal_coordinate)
+            master_dict_E[read.reference_length].append(terminal_coordinate)
+            master_dict_P[read.reference_length].append(terminal_coordinate)
+            master_dict_A[read.reference_length].append(terminal_coordinate)
 
         if apply_offset == True and terminal_map == "five_prime":
 
             if not read.is_reverse:
-                master_dict[read.reference_length].append(
+                master_dict_E[read.reference_length].append(
                     terminal_coordinate
-                    + abs(value_from_dict(offsets, read.reference_length))
+                    + abs(value_from_dict(offsets_e, read.reference_length))
+                )
+                master_dict_P[read.reference_length].append(
+                    terminal_coordinate
+                    + abs(value_from_dict(offsets_p, read.reference_length))
+                )
+                master_dict_A[read.reference_length].append(
+                    terminal_coordinate
+                    + abs(value_from_dict(offsets_a, read.reference_length))
                 )
             if read.is_reverse:
-                master_dict[read.reference_length].append(
+                master_dict_E[read.reference_length].append(
                     terminal_coordinate
-                    - abs(value_from_dict(offsets, read.reference_length))
+                    - abs(value_from_dict(offsets_e, read.reference_length))
+                )
+                master_dict_P[read.reference_length].append(
+                    terminal_coordinate
+                    - abs(value_from_dict(offsets_p, read.reference_length))
+                )
+                master_dict_A[read.reference_length].append(
+                    terminal_coordinate
+                    - abs(value_from_dict(offsets_a, read.reference_length))
                 )
 
         if apply_offset == True and terminal_map == "three_prime":
 
             if not read.is_reverse:
-                master_dict[read.reference_length].append(
+                master_dict_E[read.reference_length].append(
                     terminal_coordinate
-                    - abs(value_from_dict(offsets, read.reference_length))
+                    - abs(value_from_dict(offsets_e, read.reference_length))
+                )
+                master_dict_P[read.reference_length].append(
+                    terminal_coordinate
+                    - abs(value_from_dict(offsets_p, read.reference_length))
+                )
+                master_dict_A[read.reference_length].append(
+                    terminal_coordinate
+                    - abs(value_from_dict(offsets_a, read.reference_length))
                 )
             if read.is_reverse:
-                master_dict[read.reference_length].append(
+                master_dict_E[read.reference_length].append(
                     terminal_coordinate
-                    + abs(value_from_dict(offsets, read.reference_length))
+                    + abs(value_from_dict(offsets_e, read.reference_length))
                 )
-
+                master_dict_P[read.reference_length].append(
+                    terminal_coordinate
+                    + abs(value_from_dict(offsets_p, read.reference_length))
+                )
+                master_dict_A[read.reference_length].append(
+                    terminal_coordinate
+                    + abs(value_from_dict(offsets_a, read.reference_length))
+                )
     # return (master_dict, config)
     # Stage 2
     # master
-    tmp_maps = {}
+    tmp_maps_E, tmp_maps_P, tmp_maps_A, = {}, {}, {}
     # Convert the defaultdict list to numpy arrays for
     # easier handling
-    for length, mappings in master_dict.items():
-        if length not in global_config["readlengths"]:
+    for length, mappings in master_dict_E.items():
+        if length not in reads_to_use:
             continue
-        tmp_maps[length] = np.array(mappings)
+        tmp_maps_E[length] = np.array(mappings)
+
+    for length, mappings in master_dict_P.items():
+        if length not in reads_to_use:
+            continue
+        tmp_maps_P[length] = np.array(mappings)
+
+    for length, mappings in master_dict_A.items():
+        if length not in reads_to_use:
+            continue
+        tmp_maps_A[length] = np.array(mappings)
 
     # Reset genomic mappings so that start codon gets index 0
     if strand == "+":
-        for length, mappings in tmp_maps.items():
-            tmp_maps[length] = mappings - genomic_start
+        for length, mappings in tmp_maps_E.items():
+            tmp_maps_E[length] = mappings - genomic_start
+
+        for length, mappings in tmp_maps_P.items():
+            tmp_maps_P[length] = mappings - genomic_start
+
+        for length, mappings in tmp_maps_A.items():
+            tmp_maps_A[length] = mappings - genomic_start
+
     if strand == "-":
-        for length, mappings in tmp_maps.items():
-            tmp_maps[length] = genomic_stop - mappings
+        for length, mappings in tmp_maps_E.items():
+            tmp_maps_E[length] = genomic_stop - mappings
+
+        for length, mappings in tmp_maps_P.items():
+            tmp_maps_P[length] = genomic_stop - mappings
+
+        for length, mappings in tmp_maps_A.items():
+            tmp_maps_A[length] = genomic_stop - mappings
 
     # A numpy array holding the indexes around the genomic region
     indexes = np.array(
@@ -2613,7 +2671,7 @@ def terminal_alignment_positions_per_readlength(
     template = np.zeros(len(indexes))
 
     # Convert endmaps to vectors
-    for length, mappings in tmp_maps.items():
+    for length, mappings in tmp_maps_E.items():
         nullvec = template.copy()
 
         for maps in mappings:
@@ -2627,10 +2685,46 @@ def terminal_alignment_positions_per_readlength(
 
                 nullvec[index] = nullvec[index] + 1
 
-        tmp_maps[length] = nullvec  # .copy() not ideal
+        tmp_maps_E[length] = nullvec  # .copy() not ideal
         # nullvec = np.delete(nullvec, [i for i in range(len(nullvec))])
 
-    return tmp_maps
+    # Convert endmaps to vectors
+    for length, mappings in tmp_maps_P.items():
+        nullvec = template.copy()
+
+        for maps in mappings:
+            if (maps >= (-upto_upstream_nt)) and (
+                maps <= upto_downstrm_nt + gene_length
+            ):
+                index = np.where(indexes == maps)[0][0]
+                if index == None:
+                    # Element doesn't exist
+                    continue
+
+                nullvec[index] = nullvec[index] + 1
+
+        tmp_maps_P[length] = nullvec  # .copy() not ideal
+        # nullvec = np.delete(nullvec, [i for i in range(len(nullvec))])
+
+    # Convert endmaps to vectors
+    for length, mappings in tmp_maps_A.items():
+        nullvec = template.copy()
+
+        for maps in mappings:
+            if (maps >= (-upto_upstream_nt)) and (
+                maps <= upto_downstrm_nt + gene_length
+            ):
+                index = np.where(indexes == maps)[0][0]
+                if index == None:
+                    # Element doesn't exist
+                    continue
+
+                nullvec[index] = nullvec[index] + 1
+
+        tmp_maps_A[length] = nullvec  # .copy() not ideal
+        # nullvec = np.delete(nullvec, [i for i in range(len(nullvec))])
+
+    return tmp_maps_E, tmp_maps_P, tmp_maps_A
 
 
 # # INPUT:  1. Output from terminal_alignment_positions_per_readlength()
@@ -2847,26 +2941,26 @@ def map_gene_to_endmaps(
         #     codons_to_skip=only_reads_with_codons,
         # )
         # Get read terminal alignment coordinates
-        endmaps_P = terminal_alignment_positions_per_readlength(
+        endmaps_E, endmaps_P, endmaps_A = terminal_alignment_positions_per_readlength(
             details,
             apply_offset,
-            offset_site="P",
-            codons_to_skip=only_reads_with_codons,
+            # offset_site="P",
+            # codons_to_skip=only_reads_with_codons,
         )
 
-        endmaps_E = terminal_alignment_positions_per_readlength(
-            details,
-            apply_offset,
-            offset_site="E",
-            codons_to_skip=only_reads_with_codons,
-        )
+        # endmaps_E = terminal_alignment_positions_per_readlength(
+        #     details,
+        #     apply_offset,
+        #     offset_site="E",
+        #     codons_to_skip=only_reads_with_codons,
+        # )
 
-        endmaps_A = terminal_alignment_positions_per_readlength(
-            details,
-            apply_offset,
-            offset_site="A",
-            codons_to_skip=only_reads_with_codons,
-        )
+        # endmaps_A = terminal_alignment_positions_per_readlength(
+        #     details,
+        #     apply_offset,
+        #     offset_site="A",
+        #     codons_to_skip=only_reads_with_codons,
+        # )
 
         # Skip genes too close to the Chromosomal start
         if endmaps_P == None:  # all should return None
