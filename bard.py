@@ -71,7 +71,7 @@ np.random.seed(12345)
 
 # This line is automatically updated before each commit
 # Do not edit
-versionstr = "bard v1.0 ID=17-00-48-21-09-2020"
+versionstr = "bard v1.0 ID=17-16-37-21-09-2020"
 
 codon_to_aa = {
     "ATA": "I",
@@ -4811,7 +4811,7 @@ class Ui_MainWindow(object):
         self.buttonBox.setObjectName("buttonBox")
         # --[ OK/Cancel buttons wired up
         self.buttonBox.accepted.connect(lambda: self.clicked_OK())
-        self.buttonBox.rejected.connect(lambda: MainWindow.close())
+        self.buttonBox.rejected.connect(lambda: self.cancelled())
         # --]
         self.btn_export_json = QtWidgets.QPushButton(self.centralwidget)
         self.btn_export_json.setGeometry(QtCore.QRect(36, 688, 131, 23))
@@ -4954,6 +4954,36 @@ class Ui_MainWindow(object):
             return True
         else:
             return False
+
+    def exit_bard_confirmed(self):
+        """
+        Confirmation popup before we exit
+        """
+        cnf = QtWidgets.QMessageBox()
+        cnf.setIcon(QtWidgets.QMessageBox.Question)
+        cnf.setWindowTitle("bard - Query")
+        cnf.setText("Confirm Exit.")
+
+        cnf.setStandardButtons(QtWidgets.QMessageBox.Cancel | QtWidgets.QMessageBox.Ok)
+
+        response = cnf.exec_()
+
+        if response == QtWidgets.QMessageBox.Ok:
+            return True
+        else:
+            return False
+
+    def cancelled(self):
+        """
+        GUI exit
+        """
+        # Ask confirmation first
+        if self.exit_bard_confirmed():
+            pass
+        else:
+            return
+
+        MainWindow.close()
 
     def about_dialog(self):
         """
