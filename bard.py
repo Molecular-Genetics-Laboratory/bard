@@ -71,7 +71,7 @@ np.random.seed(12345)
 
 # This line is automatically updated before each commit
 # Do not edit
-versionstr = "bard v1.0 ID=17-16-37-21-09-2020"
+versionstr = "bard v1.0 ID=18-32-36-21-09-2020"
 
 codon_to_aa = {
     "ATA": "I",
@@ -791,42 +791,14 @@ unique = lambda v: list(set(v))
 stats = lambda v: {"avg": round(np.mean(v), 3), "std": round(np.std(v), 3)}
 
 
-def sql_connect():
-    """
-    Connecting to the database.
-    Maybe used for handling eukaryotic data
-
-    Returns
-    -------
-    None.
-
-    """
-    import sqlite3
-
-    # create sqlite connection
-    dbcon = sqlite3.connect("fragments.sqlite3")
-    # create table for RPFs and define the data format
-    initialize_db = (
-        "create table fragments(name text, size int, base5 text, base3 text)"
-    )
-
-    dbcon.execute(initialize_db)
-
-    store_cmd = "insert into fragments values(?, ?, ?, ?)"
-
-    # Loop over our hash and store the data
-    for key, value in a.items():
-        params = (key, value[0], value[1], value[2])
-        dbcon.execute(store_cmd, params)
-
-    dbcon.commit()  # save changes
-
-    retrieve_cmd = "select * from fragments where base3='C'"
-
-    for row in dbcon.execute(retrieve_cmd):
-        print(row)
-
-    dbcon.close()
+def notify_malformed_input():
+    print("\033[33m  ABORT: Malformed input or nonexistent configuration file\033[m\n")
+    print("  Usage: \n")
+    print("       Supply the configuration file directly:\n")
+    print("         ~$ python bard.py --config config_file.json\n\n   OR\n")
+    print("       Configure using the graphical interface:\n")
+    print("         ~$ python bard.py\n\n")
+    print("  Bye!\n")
 
 
 def line_number():
@@ -2476,7 +2448,7 @@ def terminal_alignment_positions_per_readlength(
 
     # Ignore genes too close to chromosomal start (including buffering)
     if start <= 0:
-        return None
+        raise RuntimeError("Negative alignment coordinates")
 
     # i, j = 0, 0
 
@@ -2941,12 +2913,26 @@ def map_gene_to_endmaps(
         #     codons_to_skip=only_reads_with_codons,
         # )
         # Get read terminal alignment coordinates
-        endmaps_E, endmaps_P, endmaps_A = terminal_alignment_positions_per_readlength(
-            details,
-            apply_offset,
-            # offset_site="P",
-            # codons_to_skip=only_reads_with_codons,
-        )
+        try:
+            (
+                endmaps_E,
+                endmaps_P,
+                endmaps_A,
+            ) = terminal_alignment_positions_per_readlength(
+                details,
+                apply_offset,
+                # offset_site="P",
+                # codons_to_skip=only_reads_with_codons,
+            )
+        except RuntimeError:
+            # Ignore. This gets tripped when
+            # a gene lies too close to the
+            # chromosomal start.
+            notify(
+                "{} lies too close to genomic start. Ignoring".format(gene_name),
+                level="warn",
+            )
+            continue
 
         # endmaps_E = terminal_alignment_positions_per_readlength(
         #     details,
@@ -4962,7 +4948,7 @@ class Ui_MainWindow(object):
         cnf = QtWidgets.QMessageBox()
         cnf.setIcon(QtWidgets.QMessageBox.Question)
         cnf.setWindowTitle("bard - Query")
-        cnf.setText("Confirm Exit.")
+        cnf.setText("Are you sure you want to exit?")
 
         cnf.setStandardButtons(QtWidgets.QMessageBox.Cancel | QtWidgets.QMessageBox.Ok)
 
@@ -5373,8 +5359,8 @@ if __name__ == "__main__":
         print("         GNU General Public License for more details.")
         print("----------------------------------------------------------------\n")
 
-        if (len(sys.argv) > 1) and (sys.argv[1] == "--gui"):
-            # Check if graphical toolkit is available
+        if len(sys.argv) == 1:
+            # Start the GUI by default
             if QT5_INSTALLED:
                 cnf_gui = QtWidgets.QApplication([])
                 MainWindow = QtWidgets.QMainWindow()
@@ -5390,12 +5376,18 @@ if __name__ == "__main__":
                 print("\nCan't start the configuration GUI. PyQt5 is unavailable.\n")
                 print("You can install it using 'pip install pyqt5', or manually")
                 print("specify the JSON configuration file like so:")
-                print("\n           $ python bard.py config.json\n")
+                print("\n       $ python bard.py --config config_file.json\n")
                 raise SystemExit()
-        else:
+
+        elif len(sys.argv) == 2 and sys.argv[1] == "--version":
+            # The ID banner gets printed on startup,
+            # we can exit now
+            raise SystemExit()
+
+        elif len(sys.argv) == 3 and sys.argv[1] == "--config":
             # Default fallback to manual JSON config
             try:
-                set_config(load_json(sys.argv[1]))
+                set_config(load_json(sys.argv[2]))
             except:
 
                 fh = open("bard_config_template.json", "w")
@@ -5404,21 +5396,18 @@ if __name__ == "__main__":
                 ft.write(CONFIG_HELP)
                 fh.close()
                 ft.close()
-
+                notify_malformed_input()
                 print(
-                    "\033[33m  ABORT: Malformed or nonexistent configuration file\033[m\n"
+                    "  NOTE: A help file (bard_config_help.txt) has been saved\
+                               for your reference.\n"
                 )
-                print("  Usage: \n")
-                print("       Supply the configuration file directly:\n")
-                print("         ~$ python bard.py config.json\n\n   OR\n")
-                print("       Configure using the graphical interface:\n")
-                print("         ~$ python bard.py --gui\n\n")
-                print(
-                    "  A help file (bard_config_help.txt) has been saved for your reference.\n"
-                )
-                print("  Bye!\n")
-
                 raise SystemExit()
+
+        else:
+            # Incorrect input parameters
+            notify_malformed_input()
+            raise SystemExit()
+
         main()
     except KeyboardInterrupt:
         global_config["bamfile"].close()
