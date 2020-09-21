@@ -71,7 +71,7 @@ np.random.seed(12345)
 
 # This line is automatically updated before each commit
 # Do not edit
-versionstr = "bard v1.0 ID=18-32-36-21-09-2020"
+versionstr = "bard v1.0 ID=18-40-05-21-09-2020"
 
 codon_to_aa = {
     "ATA": "I",
@@ -4499,7 +4499,7 @@ def generate_report(disabled=False):
 
     repfh.write(
         report.format(
-            str(dt.now().strftime("%dth %B %Y")),
+            str(dt.now().strftime("%B %d, %Y")),
             load_svg(plotnames["terminal_stats"]),
             load_svg(plotnames["read_length_histogram"]),
             load_svg(plotnames["asymmetry_score"]),
