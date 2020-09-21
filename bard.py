@@ -2457,7 +2457,7 @@ def terminal_alignment_positions_per_readlength(
     #     offsets = offsets_e
 
     if apply_offset and (len(offsets_p) == 0):  # one available means all are
-        notify("Tried to apply offsets but none available", level="warn", onetime=True)
+        notify("No offsets available", level="warn", onetime=True)
         apply_offset = False
 
     if strandinfo == "+":
