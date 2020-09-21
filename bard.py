@@ -59,6 +59,9 @@ try:
 except:
     QT5_INSTALLED = False
 
+# Set the global file path separator
+# according to the type of OS
+SYS_SEP = os.sep
 
 plt.rc("xtick", labelsize=12)
 plt.rc("ytick", labelsize=12)
@@ -68,7 +71,7 @@ np.random.seed(12345)
 
 # This line is automatically updated before each commit
 # Do not edit
-versionstr = "bard v1.0 ID=22-44-06-08-08-2020"
+versionstr = "bard v1.0 ID=17-00-48-21-09-2020"
 
 codon_to_aa = {
     "ATA": "I",
@@ -1563,7 +1566,7 @@ def script_init():
 
     # Creating a directory, WITHOUT checking for pre-existing ones
     # with the same name. This is exactly what we want in case of
-    # re runs, and we are including the timestamp in the name.
+    # re-runs, and we are including the timestamp in the name.
     basename = "{}_Results_{}_{}_offsets_on_{}".format(
         session_id,  # prevents any screwy conflicts
         prefix,
@@ -1573,15 +1576,12 @@ def script_init():
 
     # Filename conflicts. We should never see this.
     if os.path.isdir(basename):
-        notify("Are you running this script in parallel?", level="crit")
         notify(
-            "Please ensure the BAM files are named differently.",
-            level="crit",
-            fatal=True,
+            "Session ID conflict. No problem, just run again", level="crit", fatal=True,
         )
 
-    img_dir = "{}/{}".format(basename, "Plots")
-    data_dir = "{}/{}".format(basename, "Data")
+    img_dir = "{}{}{}".format(basename, SYS_SEP, "Plots")
+    data_dir = "{}{}{}".format(basename, SYS_SEP, "Data")
 
     os.makedirs(img_dir)
     os.makedirs(data_dir)
@@ -1603,15 +1603,15 @@ def script_init():
         # the output files accordingly.
         metagene_callcount=0,
         suffix=suffix,
-        img_dir=img_dir + "/",  # this breaks Windows compatibility
-        data_dir=data_dir + "/",
-        log_file="{}/{}_logfile_for_{}_{}.txt".format(
-            basename, session_id, prefix, str(dt.now().strftime("%I-%M-%S%p"))
+        img_dir=img_dir + SYS_SEP,
+        data_dir=data_dir + SYS_SEP,
+        log_file="{}{}{}_logfile_for_{}_{}.txt".format(
+            basename, SYS_SEP, session_id, prefix, str(dt.now().strftime("%I-%M-%S%p"))
         ),
-        conf_file="{}/{}_runconfig_{}_{}.json".format(
-            basename, session_id, prefix, str(dt.now().strftime("%I-%M-%S%p"))
+        conf_file="{}{}{}_runconfig_{}_{}.json".format(
+            basename, SYS_SEP, session_id, prefix, str(dt.now().strftime("%I-%M-%S%p"))
         ),
-        report_file="{}/{}_Report.html".format(basename, session_id),
+        report_file="{}{}{}_Report.html".format(basename, SYS_SEP, session_id),
         session_id=session_id,
         prefix=prefix,
         script_version=versionstr,
@@ -1650,7 +1650,7 @@ def script_init():
     # We should try to index it ourselves.
     if not os.path.isfile(
         os.path.split(global_config["bam_file_path"])[0]
-        + "/"
+        + SYS_SEP
         + extract_file_name(global_config["bam_file_path"])
         + ".bam.bai"
     ):
@@ -2885,7 +2885,7 @@ def map_gene_to_endmaps(
         level="notf",
     )
 
-    notify("Checking read alignments (this can take some time)")
+    notify("Processing read alignments, stand by ...")
 
     i, ant_sz = 0, len(high_coverage_genes)
 
