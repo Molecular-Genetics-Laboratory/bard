@@ -71,7 +71,7 @@ np.random.seed(12345)
 
 # This line is automatically updated before each commit
 # Do not edit
-versionstr = "bard v1.0 ID=18-40-05-21-09-2020"
+versionstr = "bard v1.0 ID=19-56-58-21-09-2020"
 
 codon_to_aa = {
     "ATA": "I",
@@ -523,14 +523,14 @@ padding: 25px;
 box-shadow: 0 0 5px #ccc;
 width: 90%;
 margin:0 auto;
-font-family: "Sans";
+font-family: sans-serif;
 }}
 
 .navbar {{
 font-size: 27px;
 padding: 15px;
 background-color: #2e8ccf;
-font-family: "Sans";
+font-family: sans-serif;
 color: #ffffff;
 overflow: hidden;
 position: fixed;
