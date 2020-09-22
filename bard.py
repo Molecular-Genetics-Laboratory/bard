@@ -51,7 +51,7 @@ import os
 
 
 # from matplotlib.pyplot import figure
-
+RUN_START = str(dt.now().strftime("%a, %B %d, %Y, %I:%M:%S %p"))
 # Check if GUI toolkit is available
 QT5_INSTALLED = True
 try:
@@ -551,6 +551,25 @@ float: right;
 text-align: right;
 padding: 0px 25px;
 }}
+    
+table.tbl {{
+margin-left: 90px;
+margin-right: auto;
+table-layout: auto;			
+}}
+
+table {{
+border-collapse: collapse;
+border: 1px solid black;
+width: 80%;
+}}
+
+th, td {{
+font-family: monospace;
+border: 1px solid black;
+padding: 10px;
+text-align: left;
+}}
 </style>
 </head>
 
@@ -562,7 +581,7 @@ bard v1.0
 </span>
 
 <span id="header">
-Analysis report
+Analysis report (Run ID: {})
 </span>
 
 <span id="info">
@@ -576,6 +595,52 @@ Analysis report
 <div class="reportBody">
 
 <h1> <p> Diagnostics </p> </h1>
+
+<table class="tbl">
+<tr>
+<td><b>Start time</b></td>
+<td style="word-break:break-all;">{}</td>
+<td><b>Stop time</b></td>
+<td style="word-break:break-all;">{}</td>	           
+</tr>
+<tr>
+<td><b>Alignment file</b></td>
+<td  style="word-break:break-all;">/file/path/to/user/scripts/data/bam/file.bam</td>
+<td><b>Annotation file</b></td>
+<td style="word-break:break-all;">/file/path/to/user/scripts/data/bam/file.gtf</td>	          
+</tr>
+<tr>
+<td><b>Mapped read count</b></td>
+<td  style="word-break:break-all;">1222400</td>
+<td><b>Total genes processed</b></td>
+<td  style="word-break:break-all;"> 6200 </td>	 	          
+</tr>
+<tr>
+<td><b>Coverage cutoff</b></td>
+<td  style="word-break:break-all;">40 RPKM</td>
+<td><b>Total genes ignored </b></td>
+<td  style="word-break:break-all;"> 500 (low coverage), 1200 (on purpose)</td>		        
+</tr>	   
+<tr>
+<td><b>Read lengths</b></td>
+<td  style="word-break:break-all;">29, 30, 31, 32, 33, 34</td>
+<td><b> Initiation scan window </b></td>
+<td  style="word-break:break-all;"> 5, 20 (nt, w.r.t start = 0) </td>         
+</tr>
+<tr>
+<td><b>P-site offset</b></td>
+<td  style="word-break:break-all;">5' end</td>
+<td><b> Arbitrary gene list </b></td>
+<td  style="word-break:break-all;"> N/A </td>		            
+</tr>
+<tr>
+<td><b>Initiation modes</b></td>
+<td  style="word-break:break-all;"> 1123 leaderless, 256 leadered, 12 downstream, 91 unclassified</td>
+<td><b> Gene list action </b></td>
+<td  style="word-break:break-all;"> N/A </td>	       
+</tr>	  	             
+</table>
+<br><br><br>
 
 <div class="img-row">
 <div class="img-column">
@@ -4495,11 +4560,39 @@ def generate_report(disabled=False):
         notify("Report generation is disabled", level="warn")
         return
 
+    RUN_STOP = str(dt.now().strftime("%a, %B %d, %Y, %I:%M:%S %p"))
+    OFST = "5' end"
+    if global_config["check_offset_from"] == "three_prime":
+        OFST = "3' end"
+    GLF, GLA = "Not mentioned", "None required"
+    if global_config["gene_list_file"] != "":
+        GLF = global_config["gene_list_file"]
+        GLA = global_config["gene_list_action"]
+
     repfh = open(global_config["report_file"], "w")
 
     repfh.write(
         report.format(
+            global_config["session_id"],
             str(dt.now().strftime("%B %d, %Y")),
+            RUN_START,
+            RUN_STOP,
+            global_config["bam_file_path"],
+            global_config["annotation_file_path"],
+            global_config["total_mapped_reads"],
+            "placeholder_total_genes_processed",
+            "{} {}".format(
+                global_config["coverage_cutoff"], global_config["coverage_metric"]
+            ),
+            "placeholder total genes ignored",
+            " ".join([str(i) for i in global_config["readlengths"]]),
+            "{} to {}, (nt, w.r.t start = 0)".format(
+                global_config["peak_scan_range"][0], global_config["peak_scan_range"][1]
+            ),
+            OFST,
+            GLF,
+            "placeholder init mode",
+            GLA,
             load_svg(plotnames["terminal_stats"]),
             load_svg(plotnames["read_length_histogram"]),
             load_svg(plotnames["asymmetry_score"]),
