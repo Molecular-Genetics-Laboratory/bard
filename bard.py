@@ -71,7 +71,7 @@ np.random.seed(12345)
 
 # This line is automatically updated before each commit
 # Do not edit
-versionstr = "bard v1.0 ID=19-56-58-21-09-2020"
+versionstr = "bard v1.0 ID=17-15-35-24-09-2020"
 
 codon_to_aa = {
     "ATA": "I",
@@ -440,7 +440,7 @@ global_config = {}
 annotation = {}
 # Plot output names --> path
 # used for report generation
-plotnames = {}
+plot_filepath = {}
 # Keep a track of the warnings emitted
 __warnings = []
 # gene name --> read length -->
@@ -555,7 +555,7 @@ padding: 0px 25px;
 table.tbl {{
 margin-left: 90px;
 margin-right: auto;
-table-layout: auto;			
+table-layout: auto;
 }}
 
 table {{
@@ -601,44 +601,44 @@ Analysis report (Run ID: {})
 <td><b>Start time</b></td>
 <td style="word-break:break-all;">{}</td>
 <td><b>Stop time</b></td>
-<td style="word-break:break-all;">{}</td>	           
+<td style="word-break:break-all;">{}</td>
 </tr>
 <tr>
 <td><b>Alignment file</b></td>
-<td  style="word-break:break-all;">/file/path/to/user/scripts/data/bam/file.bam</td>
+<td  style="word-break:break-all;">{}</td>
 <td><b>Annotation file</b></td>
-<td style="word-break:break-all;">/file/path/to/user/scripts/data/bam/file.gtf</td>	          
+<td style="word-break:break-all;">{}</td>
 </tr>
 <tr>
-<td><b>Mapped read count</b></td>
-<td  style="word-break:break-all;">1222400</td>
-<td><b>Total genes processed</b></td>
-<td  style="word-break:break-all;"> 6200 </td>	 	          
+<td><b>#mapped reads</b></td>
+<td  style="word-break:break-all;">{}</td>
+<td><b> #genes in annotation</b></td>
+<td  style="word-break:break-all;">{} </td>
 </tr>
 <tr>
 <td><b>Coverage cutoff</b></td>
-<td  style="word-break:break-all;">40 RPKM</td>
-<td><b>Total genes ignored </b></td>
-<td  style="word-break:break-all;"> 500 (low coverage), 1200 (on purpose)</td>		        
+<td  style="word-break:break-all;">{}</td>
+<td><b> #genes used </b></td>
+<td  style="word-break:break-all;">{}</td>
 </tr>	   
 <tr>
-<td><b>Read lengths</b></td>
-<td  style="word-break:break-all;">29, 30, 31, 32, 33, 34</td>
+<td><b>Read lengths used</b></td>
+<td  style="word-break:break-all;">{}</td>
 <td><b> Initiation scan window </b></td>
-<td  style="word-break:break-all;"> 5, 20 (nt, w.r.t start = 0) </td>         
+<td  style="word-break:break-all;">{}</td>
 </tr>
 <tr>
-<td><b>P-site offset</b></td>
-<td  style="word-break:break-all;">5' end</td>
-<td><b> Arbitrary gene list </b></td>
-<td  style="word-break:break-all;"> N/A </td>		            
+<td><b>Offset from</b></td>
+<td  style="word-break:break-all;">{}</td>
+<td><b> Gene list </b></td>
+<td  style="word-break:break-all;">{}</td>
 </tr>
 <tr>
 <td><b>Initiation modes</b></td>
-<td  style="word-break:break-all;"> 1123 leaderless, 256 leadered, 12 downstream, 91 unclassified</td>
+<td  style="word-break:break-all;">{}</td>
 <td><b> Gene list action </b></td>
-<td  style="word-break:break-all;"> N/A </td>	       
-</tr>	  	             
+<td  style="word-break:break-all;">{}</td>
+</tr>
 </table>
 <br><br><br>
 
@@ -1033,7 +1033,7 @@ def cmatplot(
         "{}".format(name),
         global_config["img_id"],
     )
-    plotnames[name] = i1
+    plot_filepath[name] = i1
 
     plt.savefig(
         i1, bbox_inches="tight", pad_inches=0.2,
@@ -1802,6 +1802,7 @@ def script_init():
         set_global_config(overlap_exception=[])
 
     parse_gff()
+    global_config["num_genes_gtf"] = len(annotation)
     detect_overlaps()
     update_operon_status()
 
@@ -2093,8 +2094,8 @@ def plot_metagene_per_readlength(plot_title="", figsize_x=10, figsize_y=8, labsi
             "metagene_kmer_framing_no_offset",
             global_config["img_id"],
         )
-        plotnames["kmer_metagene_no_offset"] = i1
-        plotnames["kmer_metabar_no_offset"] = i2
+        plot_filepath["kmer_metagene_no_offset"] = i1
+        plot_filepath["kmer_metabar_no_offset"] = i2
     else:
         fname_line = "metagene_kmer_offset"
         i1 = "{}{}_{}_{}.svg".format(
@@ -2109,8 +2110,8 @@ def plot_metagene_per_readlength(plot_title="", figsize_x=10, figsize_y=8, labsi
             "metagene_kmer_framing_offset",
             global_config["img_id"],
         )
-        plotnames["kmer_metagene_with_offset"] = i1
-        plotnames["kmer_metabar_with_offset"] = i2
+        plot_filepath["kmer_metagene_with_offset"] = i1
+        plot_filepath["kmer_metabar_with_offset"] = i2
 
     save_file(savedata, fname_line, verbose=global_config["filename_verbosity"])
 
@@ -2354,7 +2355,7 @@ def plot_initiation_peak(peak=False, peak_range=[]):
         "start_peak",
         global_config["img_id"],
     )
-    plotnames["initiation"] = i1
+    plot_filepath["initiation"] = i1
     plt.savefig(
         i1, bbox_inches="tight", pad_inches=0.2,
     )
@@ -2388,7 +2389,7 @@ def plot_initiation_peak(peak=False, peak_range=[]):
         "start_peak_framing",
         global_config["img_id"],
     )
-    plotnames["init_framing"] = i2
+    plot_filepath["init_framing"] = i2
     plt.savefig(
         i2, bbox_inches="tight", pad_inches=0.2,
     )
@@ -3333,7 +3334,7 @@ def plot_metagene_over_codon(codon_list, site="P"):
         "metagene_over_codon_{}".format("+".join(codon_list)),
         global_config["img_id"],
     )
-    plotnames["metagene_over_codon"] = i1
+    plot_filepath["metagene_over_codon"] = i1
     plt.savefig(
         i1, bbox_inches="tight", pad_inches=0.2,
     )
@@ -3369,7 +3370,7 @@ def plot_reading_frame(framedict):
         "reading_frame",
         global_config["img_id"],
     )
-    plotnames["reading_frame"] = i1
+    plot_filepath["reading_frame"] = i1
     plt.savefig(
         i1, bbox_inches="tight", pad_inches=0.2,
     )
@@ -3416,7 +3417,7 @@ def plot_stop_peak(leftpos=10, rightpos=0):
         "stop_peak",
         global_config["img_id"],
     )
-    plotnames["termination"] = i1
+    plot_filepath["termination"] = i1
     plt.savefig(
         i1, bbox_inches="tight", pad_inches=0.2,
     )
@@ -3623,7 +3624,7 @@ def plot_pauses_combined():
         "pps_over_genes",
         global_config["img_id"],
     )
-    plotnames["pps_metagene"] = i1
+    plot_filepath["pps_metagene"] = i1
     plt.savefig(
         i1, bbox_inches="tight", pad_inches=0.2,
     )
@@ -3695,7 +3696,7 @@ def plot_pauses_combined():
         "pause_score_codon",
         global_config["img_id"],
     )
-    plotnames["per_codon_pps_heatmap"] = i2
+    plot_filepath["per_codon_pps_heatmap"] = i2
     plt.savefig(
         i2, bbox_inches="tight", pad_inches=0.2,
     )
@@ -3749,7 +3750,7 @@ def plot_pauses_combined():
         "pause_score_codon_bar",
         global_config["img_id"],
     )
-    plotnames["per_codon_pps_barplot"] = i3
+    plot_filepath["per_codon_pps_barplot"] = i3
     plt.savefig(
         i3, bbox_inches="tight", pad_inches=0.2,
     )
@@ -3840,7 +3841,7 @@ def plot_pauses_combined():
         "pause_score_aa",
         global_config["img_id"],
     )
-    plotnames["per_aa_pps_heatmap"] = i4
+    plot_filepath["per_aa_pps_heatmap"] = i4
     plt.savefig(
         i4, bbox_inches="tight", pad_inches=0.2,
     )
@@ -3892,7 +3893,7 @@ def plot_pauses_combined():
         "pause_score_aa_bar",
         global_config["img_id"],
     )
-    plotnames["per_aa_pps_barplot"] = i5
+    plot_filepath["per_aa_pps_barplot"] = i5
     plt.savefig(
         i5, bbox_inches="tight", pad_inches=0.2,
     )
@@ -3958,7 +3959,7 @@ def read_length_histogram():
         "read_length_histogram",
         global_config["img_id"],
     )
-    plotnames["read_length_histogram"] = i1
+    plot_filepath["read_length_histogram"] = i1
     plt.savefig(
         i1, bbox_inches="tight", pad_inches=0.2,
     )
@@ -4063,7 +4064,7 @@ def read_terminal_stats():
         "basestat",
         global_config["img_id"],
     )
-    plotnames["terminal_stats"] = i1
+    plot_filepath["terminal_stats"] = i1
     plt.savefig(
         i1, bbox_inches="tight", pad_inches=0.2,
     )
@@ -4133,7 +4134,7 @@ def calculate_asymmetry_scores():
         global_config["img_id"],
     )
 
-    plotnames["asymmetry_score"] = i1
+    plot_filepath["asymmetry_score"] = i1
 
     plt.savefig(
         i1, bbox_inches="tight", pad_inches=0.2,
@@ -4244,7 +4245,7 @@ def consistency_score_per_transcript():
         "consistency_plot",
         global_config["img_id"],
     )
-    plotnames["consistency_score"] = i1
+    plot_filepath["consistency_score"] = i1
     plt.savefig(
         i1, bbox_inches="tight", pad_inches=0.2,
     )
@@ -4380,6 +4381,12 @@ def detect_leaderless_transcripts(disabled=False, nt_buffer=100):
     cmatplot(nld, title="Leaderless transcripts", name="leaderless_genes")
     cmatplot(dni, title="Downstream initiators", name="downstream_initiators")
     cmatplot(unc, title="Unclassified", name="unclassified")
+
+    # Save the info so that we can use it in the report
+    global_config["N_leadered"] = len(ldr)
+    global_config["N_leaderless"] = len(nld)
+    global_config["N_downstream_inits"] = len(dni)
+    global_config["N_unclassified"] = len(unc)
 
     # Data for heatmap
     save_file(ldr, "leadered_genes_data")
@@ -4560,14 +4567,33 @@ def generate_report(disabled=False):
         notify("Report generation is disabled", level="warn")
         return
 
+    # Runtimes
     RUN_STOP = str(dt.now().strftime("%a, %B %d, %Y, %I:%M:%S %p"))
+    # Offset direction
     OFST = "5' end"
     if global_config["check_offset_from"] == "three_prime":
         OFST = "3' end"
+    # Gene lists
     GLF, GLA = "Not mentioned", "None required"
     if global_config["gene_list_file"] != "":
         GLF = global_config["gene_list_file"]
         GLA = global_config["gene_list_action"]
+
+    # Leaderless transcripts
+    if "N_leaderless" not in global_config:
+        # detection was disabled
+        ldr_detect = "Disabled"
+    else:
+        ldr_detect = "{} leaderless, {} leadered, {} downstream, {} unclassified".format(
+            global_config["N_leaderless"],
+            global_config["N_leadered"],
+            global_config["N_downstream_inits"],
+            global_config["N_unclassified"],
+        )
+    # No. filtered genes
+    genes_init = global_config["num_genes_gtf"]
+    genes_filt = len(high_coverage_genes)
+    genes_disc = round((genes_init - len(high_coverage_genes)) / genes_init * 100, 1)
 
     repfh = open(global_config["report_file"], "w")
 
@@ -4579,38 +4605,38 @@ def generate_report(disabled=False):
             RUN_STOP,
             global_config["bam_file_path"],
             global_config["annotation_file_path"],
-            global_config["total_mapped_reads"],
-            "placeholder_total_genes_processed",
+            global_config["mapped_reads"],
+            genes_init,
             "{} {}".format(
                 global_config["coverage_cutoff"], global_config["coverage_metric"]
             ),
-            "placeholder total genes ignored",
-            " ".join([str(i) for i in global_config["readlengths"]]),
-            "{} to {}, (nt, w.r.t start = 0)".format(
+            "{} ({}% discarded)".format(genes_filt, genes_disc),
+            ", ".join([str(i) for i in global_config["readlengths"]]),
+            "{} to {} (nt, w.r.t. start = 0)".format(
                 global_config["peak_scan_range"][0], global_config["peak_scan_range"][1]
             ),
             OFST,
             GLF,
-            "placeholder init mode",
+            ldr_detect,
             GLA,
-            load_svg(plotnames["terminal_stats"]),
-            load_svg(plotnames["read_length_histogram"]),
-            load_svg(plotnames["asymmetry_score"]),
-            load_svg(plotnames["reading_frame"]),
-            load_svg(plotnames["kmer_metagene_no_offset"]),
-            load_svg(plotnames["kmer_metabar_with_offset"]),
-            load_svg(plotnames["initiation"]),
-            load_svg(plotnames["init_framing"]),
-            load_svg(plotnames["leaderless_genes"]),
-            load_svg(plotnames["downstream_initiators"]),
-            load_svg(plotnames["leadered_genes"]),
-            load_svg(plotnames["unclassified"]),
-            load_svg(plotnames["termination"]),
-            load_svg(plotnames["pps_metagene"]),
-            load_svg(plotnames["per_codon_pps_heatmap"]),
-            load_svg(plotnames["per_codon_pps_barplot"]),
-            load_svg(plotnames["per_aa_pps_heatmap"]),
-            load_svg(plotnames["per_aa_pps_barplot"]),
+            load_svg(plot_filepath["terminal_stats"]),
+            load_svg(plot_filepath["read_length_histogram"]),
+            load_svg(plot_filepath["asymmetry_score"]),
+            load_svg(plot_filepath["reading_frame"]),
+            load_svg(plot_filepath["kmer_metagene_no_offset"]),
+            load_svg(plot_filepath["kmer_metabar_with_offset"]),
+            load_svg(plot_filepath["initiation"]),
+            load_svg(plot_filepath["init_framing"]),
+            load_svg(plot_filepath["leaderless_genes"]),
+            load_svg(plot_filepath["downstream_initiators"]),
+            load_svg(plot_filepath["leadered_genes"]),
+            load_svg(plot_filepath["unclassified"]),
+            load_svg(plot_filepath["termination"]),
+            load_svg(plot_filepath["pps_metagene"]),
+            load_svg(plot_filepath["per_codon_pps_heatmap"]),
+            load_svg(plot_filepath["per_codon_pps_barplot"]),
+            load_svg(plot_filepath["per_aa_pps_heatmap"]),
+            load_svg(plot_filepath["per_aa_pps_barplot"]),
         )
     )
 
