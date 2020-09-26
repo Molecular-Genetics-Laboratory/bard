@@ -71,7 +71,7 @@ np.random.seed(12345)
 
 # This line is automatically updated before each commit
 # Do not edit
-versionstr = "bard v1.0 ID=17-15-35-24-09-2020"
+versionstr = "bard v1.0 ID=20-09-57-26-09-2020"
 
 codon_to_aa = {
     "ATA": "I",
@@ -476,7 +476,7 @@ ribosome_densities["E"] = {}
 ribosome_densities["P"] = {}
 ribosome_densities["A"] = {}
 # gene name --> cds sequence
-transcripts_dict = {}
+sequence_dict = {}
 # gene name --> cds sequence in codons &
 # the positional pause vector
 pps_vector_per_gene = {}
@@ -1190,6 +1190,16 @@ def expand_to_codon(v):
     return tmp
 
 
+def retrieve_coding_sequence(fname, ftype="fasta"):
+    """
+    Loads a file mapping genes to their CDS sequences
+    """
+    if len(sequence_dict) == 0:
+        cds = list(SeqIO.parse(fname, ftype))
+        for i in range(len(cds)):
+            sequence_dict[cds[i].id] = str(cds[i].seq)
+
+
 def extract_file_name(path):
     """
     Given an absolute path, extracts the file name
@@ -1211,7 +1221,7 @@ def reset():
     metagene_per_readlength.clear()
     overlap_dict.clear()
     ribosome_densities.clear()
-    transcripts_dict.clear()
+    sequence_dict.clear()
     pps_vector_per_gene.clear()
     offsets_p.clear()
     offsets_e.clear()
@@ -1506,6 +1516,9 @@ def parse_gff():
     """
     Converts a GFFv3/GTF file into a dictionary.
     """
+    global annotation
+
+    notify("Parsing annotation ...")
     annofile = global_config["annotation_file_path"]
     # Feature tag in GFF column 9 which contains gene name
     feature_tag = global_config["annotation_feature_tag"]
@@ -1523,16 +1536,13 @@ def parse_gff():
         annolist.append(record)
 
     all_gene_names = []
-    # We can sometimes find duplicate gene names in the annotation files.
-    # In case a duplicate is detected, this function appends an integer
-    # suffix to it's name, which is a count of #times it was encountered.
-    def check_duplicate_name(gene_name):
+
+    # Append an integer denoting the nth exon for a gene
+    def check_possible_exon(gene_name):
 
         if gene_name in all_gene_names:
             notify(
-                "Found duplicate annotation, will tag and ignore",
-                level="warn",
-                onetime=True,
+                "Possible eukaryote?", level="warn", onetime=True,
             )
             all_gene_names.append(gene_name)
 
@@ -1549,7 +1559,7 @@ def parse_gff():
             # strip the feature tag and return gene name
             if feature_tag in attribute:
                 found_tag = True
-                return check_duplicate_name(
+                return check_possible_exon(
                     attribute.replace(feature_tag, "")
                     .replace('"', "")
                     .replace("=", "")
@@ -1583,6 +1593,32 @@ def parse_gff():
             level="crit",
         )
         notify("Please verify the GFF/GTF file (2nd column)", level="crit", fatal=True)
+
+    # Santize the annotation so that we only keep those entries whose
+    # reference IDs match those in the BAM file
+    bam_chrs = global_config["bam_chr_ids"]
+    gff_prev_len = len(annotation)
+
+    tmp = {}
+    for gene, details in annotation.items():
+        if details["refname"] in bam_chrs:
+            tmp[gene] = details
+
+    gff_trim_len = len(tmp)
+    annotation = tmp
+
+    if gff_trim_len < 1:
+        notify("Chromosome/Reference IDs in BAM file does not", level="crit")
+        notify("match those in the GFF/GTF, aborting ...", level="crit", fatal=True)
+    elif gff_trim_len != gff_prev_len:
+        notify(
+            "Removed {} entries from annotation due to reference ID mismatch".format(
+                gff_prev_len - gff_trim_len
+            )
+        )
+        notify("Changed annotation size: {} -> {}".format(gff_prev_len, gff_trim_len))
+    else:
+        pass
 
     save_file(annotation, "annotation", verbose=global_config["filename_verbosity"])
 
@@ -1668,6 +1704,20 @@ def script_init():
             .split("+")[0]
             .strip(" ")
         )
+        global_config["mapped_reads"] = total_mapped_reads
+
+        # Query the BAM file and retrieve the chromosome names
+        # We ignore an annotation chromosome names dont match
+        chrs = [
+            x.split("\t")[0]
+            for x in pysam.idxstats(global_config["bam_file_path"]).split("\n")
+        ]
+        if "*" in chrs:
+            chrs.remove("*")
+        if "" in chrs:
+            chrs.remove("")
+
+        global_config["bam_chr_ids"] = chrs
 
         if total_mapped_reads < 1e6:
             notify(
@@ -1676,8 +1726,6 @@ def script_init():
                 ),
                 level="crit",
             )
-
-        global_config["mapped_reads"] = total_mapped_reads
 
         notify("Found BAM file ({}), seems OK".format(prefix), level="notf")
     except:
@@ -1801,7 +1849,22 @@ def script_init():
     except:
         set_global_config(overlap_exception=[])
 
+    retrieve_coding_sequence(
+        global_config["coding_sequence_path"], global_config["coding_sequence_format"],
+    )
     parse_gff()
+
+    if (
+        len(
+            set(list(annotation.keys())).intersection(
+                set(list(sequence_dict.keys()))
+            )
+        )
+        == 0
+    ):
+        notify("Genes names retrieved from annotation do not match", level="crit")
+        notify("those in the CDS sequence file, aborting ...", level="crit", fatal=True)
+
     global_config["num_genes_gtf"] = len(annotation)
     detect_overlaps()
     update_operon_status()
@@ -1841,7 +1904,7 @@ def check_gene_list():
     try:
         genelist = read_genes_from_file(listfile)
     except:
-        notify("No arbitrary gene list provided, moving on", level="warn")
+        notify("No gene list provided, moving on ...", level="warn")
         return
 
     if listaction not in actions:
@@ -1881,6 +1944,9 @@ def check_gene_list():
             total_annotation_size, len(annotation)
         )
     )
+
+    if len(annotation) < 1:
+        notify("All genes filtered out, aborting ...", level="crit", fatal=True)
 
 
 def save_file(data, filename, verbose=False):
@@ -2765,80 +2831,6 @@ def terminal_alignment_positions_per_readlength(
     return tmp_maps_E, tmp_maps_P, tmp_maps_A
 
 
-# # INPUT:  1. Output from terminal_alignment_positions_per_readlength()
-# #         2. The annotation data of the gene in question
-# #         3. The buffered start and stop coordinates over which
-# #            to calculate the vectors
-# #
-# # OUTPUT: Dictionary mapping gene_name --> readlength --> endmap_vector
-# def position_list_to_endmap_vector(mapdict, config, gene_annotation):
-#     """
-#     Returns a vector, each element denoting the number of 5' or 3'
-#     read terminals aligning per nucleotide position (represented
-#     by the element indices). Separate vectors for each read length.
-#     For a single gene.
-#     """
-#     return
-#     # start = config["start"]
-#     # stop = config["stop"]
-#     # Gene annotation details
-#     strand = gene_annotation["strand"]
-#     genomic_start = gene_annotation["start"]
-#     genomic_stop = gene_annotation["stop"]
-#     gene_length = abs(genomic_start - genomic_stop)
-#     # How many nt up and downstream of the start codon are
-#     # we supposed to consider
-#     upto_upstream_nt = global_config["endmap_upstream"]
-#     upto_downstrm_nt = global_config["endmap_downstream"]
-#     # master
-#     tmp_maps = {}
-#     # Convert the defaultdict list to numpy arrays for
-#     # easier handling
-#     for length, mappings in mapdict.items():
-#         if length not in global_config["readlengths"]:
-#             continue
-#         tmp_maps[length] = np.array(mappings)
-
-#     # Reset genomic mappings so that start codon gets index 0
-#     if strand == "+":
-#         for length, mappings in tmp_maps.items():
-#             tmp_maps[length] = mappings - genomic_start
-#     if strand == "-":
-#         for length, mappings in tmp_maps.items():
-#             tmp_maps[length] = genomic_stop - mappings
-
-#     # A numpy array holding the indexes around the genomic region
-#     indexes = np.array(
-#         [i for i in range(-upto_upstream_nt, upto_downstrm_nt + gene_length + 1, 1)]
-#     )
-
-#     # Indexes for plotting the metagene
-#     metagene_per_readlength["xaxis"] = indexes
-#     # Zeroed vector, each element will be incremented by the read counts
-#     # Element indices equivalent to nucleotide positons
-#     template = np.zeros(len(indexes))
-
-#     # Convert endmaps to vectors
-#     for length, mappings in tmp_maps.items():
-#         nullvec = template.copy()
-
-#         for maps in mappings:
-#             if (maps >= (-upto_upstream_nt)) and (
-#                 maps <= upto_downstrm_nt + gene_length
-#             ):
-#                 index = np.where(indexes == maps)[0][0]
-#                 if index == None:
-#                     # Element doesn't exist
-#                     continue
-
-#                 nullvec[index] = nullvec[index] + 1
-
-#         tmp_maps[length] = nullvec  #.copy() not ideal
-#         #nullvec = np.delete(nullvec, [i for i in range(len(nullvec))])
-
-#     return tmp_maps
-
-
 def detect_overlaps():
     """
     Identify overlapping genes. This is quite rudimentary.
@@ -2995,7 +2987,7 @@ def map_gene_to_endmaps(
             # a gene lies too close to the
             # chromosomal start.
             notify(
-                "{} lies too close to genomic start. Ignoring".format(gene_name),
+                "{} lies too close to genomic start, ignoring ...".format(gene_name),
                 level="warn",
             )
             continue
@@ -3259,12 +3251,6 @@ def plot_metagene_over_codon(codon_list, site="P"):
     codon_positions = {}
     cmetagene = []  # metagene over a specific codon
 
-    if len(transcripts_dict) == 0:
-        retrieve_coding_sequence(
-            global_config["coding_sequence_path"],
-            global_config["coding_sequence_format"],
-        )
-
     i = 0
     x = ["-2", "E", "P", "A", "2"]
 
@@ -3441,10 +3427,10 @@ def calculate_pause_score(site="P"):
 
     stopcodon = set(["TAA", "TAG", "TGA"])
 
-    cds_path = global_config["coding_sequence_path"]
-    cds_format = global_config["coding_sequence_format"]
+    # cds_path = global_config["coding_sequence_path"]
+    # cds_format = global_config["coding_sequence_format"]
 
-    retrieve_coding_sequence(cds_path, cds_format)
+    # retrieve_coding_sequence(cds_path, cds_format)
     skipped_transcripts = []
     skipped_density = []
     skipped_mismatch = []
@@ -3458,7 +3444,7 @@ def calculate_pause_score(site="P"):
             continue
 
         try:
-            seq = transcripts_dict[gene_name]
+            seq = sequence_dict[gene_name]
         except:
             skipped_transcripts.append(gene_name)
             continue
@@ -4434,16 +4420,6 @@ def generate_metagene_vector():
             )
 
         del tmp_list[:]
-
-
-def retrieve_coding_sequence(fname, ftype="fasta"):
-    """
-    Loads a file mapping genes to their CDS sequences
-    """
-    if len(transcripts_dict) == 0:
-        cds = list(SeqIO.parse(fname, ftype))
-        for i in range(len(cds)):
-            transcripts_dict[cds[i].id] = str(cds[i].seq)
 
 
 def calculate_densities_over_genes():
