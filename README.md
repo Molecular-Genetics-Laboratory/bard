@@ -54,7 +54,7 @@ To use the GUI (default), run the script without any arguments:
 ```shell
 ~$ python bard.py
 ```
-After making the required changes, hit `OK` to start. Alternatvely, hit `Save configuration` to save the configuration file for future use.
+After making the required changes, hit `OK` to start. Alternatively, hit `Save configuration` to save the configuration file for future use.
 
 If you already have a configuration file and would like to view/change/run it, go to `File > Load configuration` in the GUI window.
 
