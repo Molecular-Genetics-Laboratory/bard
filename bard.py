@@ -551,7 +551,7 @@ float: right;
 text-align: right;
 padding: 0px 25px;
 }}
-    
+
 table.tbl {{
 margin-left: 90px;
 margin-right: auto;
@@ -620,7 +620,7 @@ Analysis report (Run ID: {})
 <td  style="word-break:break-all;">{}</td>
 <td><b> #genes used </b></td>
 <td  style="word-break:break-all;">{}</td>
-</tr>	   
+</tr>
 <tr>
 <td><b>Read lengths used</b></td>
 <td  style="word-break:break-all;">{}</td>
@@ -741,7 +741,7 @@ CONFIG_HELP = """
 In order to run bard, you'll have to supply it with a JSON configuration file, like so:
 
 
-        ~$ python bard.py config.json
+        ~$ python bard.py --config config_file.json
 
 
 A JSON file is just a structured text file you can open and edit in your text editor.
@@ -875,7 +875,7 @@ def line_number():
     Returns
     -------
     int
-        Which line did this function get called 
+        Which line did this function get called
         from?
     """
     return inspect.currentframe().f_back.f_lineno
@@ -888,7 +888,7 @@ def load_json(file="object.json"):
     Parameters
     ----------
     file : string, optional
-        JSON file to load from disk. 
+        JSON file to load from disk.
         The default is "object.json".
 
     Returns
@@ -939,7 +939,7 @@ def running_sum_argmin(v):
     Returns
     -------
     numpy array
-        
+
 
     """
     avg = np.mean(v)

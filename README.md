@@ -2,99 +2,68 @@
 **bard** is a tool for visualization and reporting on ribosome profiling datasets. The curent version is compatible with prokaryotes and yeast.
 
 ## Requirements
-* Python 3.x (>= 3.7)
-* Biopython (>= 1.76)
-* Numpy (>= 1.18.1)
-* Seaborn (>= 0.10.0)
-* Matplotlib (>= 3.1.3)
-* Pysam (>= 0.15.3)
-* Linux / macOS
-* At least 2GB of (usable) RAM
+* Matplotlib (== 3.1.3)
+* Seaborn (== 0.10.0)
+* Python 3.x (== 3.7)
+* Biopython (== 1.76)
+* Pysam (== 0.15.3)
+* NumPy (== 1.18.1)
+* SciPy (== 1.4.1)
+* PyQt5 (== 5.9.2)
+
+
+You'll also need either a Linux or macOS machine with at least 2GB of usable RAM.
 
 
 ## Installation and usage
-Once all dependencies are satisfied, you can download and run the `bard.py` script directly.
+You can run the `bard.py` script after installing the required dependencies.
 ### Installing dependencies
-You can install the required libraries via `pip` using the `requirements.txt` file:
+It is assumed that you are using the Anaconda distribution of Python.
 
-```shell
-~$ pip install requirements.txt
-```
-
-..or set up a virtual environment using `conda`:
+Once you have Anaconda installed, create a separate environment for `bard` using the `bard_env.yaml` file, like so:
 
 ```shell
 # create virtual environment
 # needs to be run only once
-~$ conda create --name env_name --file requirements.txt
+~$ conda env create --file bard_env.yaml
 
 # activate environment
-~$ conda activate env_name
+~$ conda activate bard_mgl
 
 ... run analysis ...
+
 # deactivate environment when done
 ~$ conda deactivate
 ```
 
 ### Usage
 
-`bard` does not work with the raw read sequence (FASTQ) files directly. They need to be preprocessed (removing rRNAs, adapters, etc) and mapped to a reference genome first, using either `bowtie2 / tophat` or some similar tool of your choice. You'll also need the corresponding annotation file and a multiple fasta file containing all the CDS sequences. The gene names in the GTF/GFF (annotation) file need to exactly match those in the fasta file. If you are working on yeast, the chromome IDs in your reference genome (fasta) should match with those in the GTF (first column).
+`bard` does not work with the raw read sequence (FASTQ) files directly. They need to be preprocessed (removing rRNAs, adapters, etc) and mapped to a reference genome first. You'll also need the corresponding annotation (GFF/GTF) file and a multi-fasta file containing all the CDS sequences. The gene names in the annotation should exactly match those in the CDS fasta file. If you are working on eukaryotes, the chromome IDs in your reference genome (fasta) should match with those in the GTF (first column).
 
 It is preferable to download these organism specific files from the same source, such as `Ensembl`.
 
-**TL;DR**:  You need to have the following files ready:
-* An annotation file (either GTF/GFFv3)
+**TL;DR**:  Have the following files ready:
+* An annotation file (in either GTF/GFFv3 format)
 * An alignment file in BAM format (indexed and unmapped reads removed)
 * A multi-fasta file containing the CDS sequences for each gene
 
 #### First run
-`bard` does not have any command-line options (except one, see below); using only a single configuration file instead. To create a configuration file, run the script without any arguments:
+Before you run it, you need to configure `bard`. You can either do this through the inbuilt graphical interface, or by manually specifying a configuration file.
 
+To use the GUI (default), run the script without any arguments:
 ```shell
 ~$ python bard.py
 ```
+After making the required changes, hit `OK` to start. Alternatvely, hit `Save configuration` to save the configuration file for future use.
 
-This will create two files in your working directory: `bard_config_template.json`, which is an empty configuration file you can edit, and a short help file `bard_config_help.txt`, which describes the available options. Please go through the help file for a full description.
+If you already have a configuration file and would like to view/change/run it, go to `File > Load configuration` in the GUI window.
 
-The configuration file looks something like this:
-
-```json
-{
-    "coding_sequence_path": "/home/user/path/to/cds.fa",
-    "coding_sequence_format": "fasta",
-    "annotation_file_path": "/home/user/path/to/annotation.gff",
-    "annotation_feature_tag": "ID",
-    "annotation_feature_type": "gene",
-    "bam_file_path": "/home/user/path/to/alignment.bam",
-    "check_offset_from": "five_prime",
-    "coverage_cutoff": 10,
-    "coverage_metric": "rpkm",
-    "will_ignore_overlaps": true,
-    "peak_scan_range": [-25, -5],
-    "use_readlengths": [26,27,28,29,30,31,32,33],
-    "gene_list_file": "/home/user/path/to/gene_list.txt",
-    "gene_list_action": "include_only",
-    "genes_overlap_exception": "/home/user/path/to/overlapping_genes_list.txt",
-    "operon_members_list": "/home/user/path/to/operon_members_list.txt"
-}
-```
-Once you have edited the configuration file to your requirements, your can run `bard` like so:
-
+To run `bard` without using the GUI, do the following:
 ```shell
-# coffee?
-~$ python bard.py config.json
+~$ python bard.py --config config_file.json
 ```
+Where `config_file.json` is a configuration file in JSON format.
 
-#### Using the graphical interface
-If you are not so keen on editing configuration files by hand, `bard` has a rudimentary but functional GUI you can use. Start it like so:
-```shell
-~$ python bard.py --gui
-```
-Do note that you need to have `Tkinter` installed and accessible for the GUI to work. The package comes pre-installed with the `Anaconda` distribution of Python, so you should probably be using that. Otherwise, on Linux (Debian/Mint/Ubuntu), you should run this first:
-```shell
-~$ sudo apt-get update
-~$ sudo apt-get install python3-tk
-```
 
 ### Example usage
 The following is a short description of how to run the script for a sample  *S. cerevisiae* dataset. The read sequences were obtained from the library `SRR1042864`. The raw sequences were preprocessed and mapped to the *S.cerevisiae* `S288C_R64-1-1_20110203` reference genome according to the protocol detailed in `doi:10.1038/nprot.2012.086`. All organism specific files were obtained from `yeastgenome.org`.
@@ -103,12 +72,12 @@ We'd use the following configuration:
 
 ```json
 {
-    "coding_sequence_path": "/home/user/Desktop/Yeast_S288C_CDS.fa",
+    "coding_sequence_path": "/home/user/yeast/Yeast_S288C_CDS.fa",
     "coding_sequence_format": "fasta",
-    "annotation_file_path": "/home/user/Desktop/Yeast_S288C_annotation.gff",
+    "annotation_file_path": "/home/user/yeast/Yeast_S288C_annotation.gff",
     "annotation_feature_tag": "protein_id",
     "annotation_feature_type": "CDS",
-    "bam_file_path": "/home/user/Desktop/aligned_reads.bam",
+    "bam_file_path": "/home/user/yeast/aligned_reads.bam",
     "check_offset_from": "three_prime",
     "coverage_cutoff": 40,
     "coverage_metric": "reads_per_nt",
@@ -141,14 +110,21 @@ Option | Description
 `operon_members_list`| List of genes which are part of operons (will be ignored when checking for leaderless transcripts) (`none specified`)
 
 
-Run the script the same way as mentioned above. The results will be written to a separate folder in your working directory with the following structure:
+If we were to use the GUI, it would look like this:
+
+<img src=/examples/bard_config.png width=400 height=500>
+
+&nbsp;
+
+Run it. The results will be written to a separate folder in your working directory with the following structure:
 ```shell
 # For illustrative purposes
 # File names will differ
 <id>_Results_<bam_file_name>_<timestamp>
 │
+├── <id>_Report.html    # a consolidated report of the entire run
 ├── <id>_logfile.txt       # full runtime logs
-├── <id>_runconfig.json    # the configuration in it's entirity
+├── <id>_runconfig.json    # the configuration in it's entirety
 │
 ├── Data
 │   ├── <id>_annotation.json       # data available for further processing
@@ -156,7 +132,7 @@ Run the script the same way as mentioned above. The results will be written to a
 │   └── <id>_gene_coverages.json
 │
 │            ... and so on
-└── Plots                         # analysis plots
+└── Plots                        
     ├── <id>_pause_score_codon.svg
     ├── <id>_reading_frame.svg
     └── <id>_asymmetry_scores.svg
@@ -211,19 +187,19 @@ We can also break down the above heatmap on a per-codon basis, which shows that 
 If you wish to analyze multiple BAM files simultaneously, you can do so by placing all the corresponding configuration files in a single folder, then executing the following command:
 
 ```shell
-~$ for config in *.json; do echo python bard.py $config; done > jobs.txt
+~$ for config in *.json; do echo python bard.py --config $config; done > jobs.txt
 
 ```
 
 This will create a `jobs.txt` file with the following contents:
 
 ```bash
-python bard.py config_1.json # for the first BAM file
-python bard.py config_2.json # and so on ..
+python bard.py --config config_1.json # for the first BAM file
+python bard.py --config config_2.json # and so on ..
 
 ...
 
-python bard.py config_N.json
+python bard.py --config config_N.json
 ```
 
 You can now use GNU Parallel to process them simultaneously, like so:
